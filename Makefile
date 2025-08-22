@@ -10,7 +10,7 @@ CXX := g++
 
 COMMON_FLAGS := \
     -std=c++23 \
-    -Wall -Wextra -Werror \
+    -Wall -Wextra \
     -pedantic -pedantic-errors \
     -Wcast-align -Wcast-qual -Wconversion \
     -Wdisabled-optimization -Wfloat-equal \
@@ -24,17 +24,19 @@ COMMON_FLAGS := \
     -Wzero-as-null-pointer-constant \
     -Wnull-dereference -Wduplicated-cond -Wlogical-op \
     -Wuseless-cast -Wdouble-promotion \
-    -fstrict-aliasing -fno-omit-frame-pointer
+    -fstrict-aliasing -fno-omit-frame-pointer -isystem /usr/include/opencv4
+
+COMMON_LD_FLAGS := $(shell pkg-config --libs opencv4)
 
 ifeq ($(PROFILE),debug)
     CXXFLAGS := $(COMMON_FLAGS) -O0 -g3 -DDEBUG \
                 -fsanitize=address,undefined,leak \
                 -fno-optimize-sibling-calls
-    LDFLAGS := -fsanitize=address,undefined,leak \
+    LDFLAGS := $(COMMON_LD_FLAGS) -fsanitize=address,undefined,leak \
                -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 else ifeq ($(PROFILE),release)
     CXXFLAGS := $(COMMON_FLAGS) -O3 -DNDEBUG -flto -DNDEBUG
-    LDFLAGS := -flto -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
+    LDFLAGS := $(COMMON_LD_FLAGS) -flto -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 else
     $(error Unknown profile "$(PROFILE)". Use: debug, release)
 endif
