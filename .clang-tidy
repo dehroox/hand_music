@@ -1,0 +1,80 @@
+Checks: >
+  *,
+  -android-*,
+  -altera-*,
+  -boost-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-integer-division,
+  -cert-dcl58-cpp,
+  -cert-env33-c,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-init-variables,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-narrowing-conversions,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -fuchsia-*,
+  -google-build-using-namespace,
+  -google-global-names-in-headers,
+  -google-readability-braces-around-statements,
+  -google-readability-todo,
+  -google-runtime-int,
+  -google-runtime-references,
+  -hicpp-braces-around-statements,
+  -hicpp-signed-bitwise,
+  -hicpp-special-member-functions,
+  -hicpp-static-assert,
+  -hicpp-avoid-c-arrays,
+  -hicpp-member-init,
+  -hicpp-move-const-arg,
+  -hicpp-no-array-decay,
+  -hicpp-no-malloc,
+  -hicpp-use-auto,
+  -hicpp-use-emplace,
+  -hicpp-use-equals-delete,
+  -hicpp-use-noexcept,
+  -hicpp-use-nullptr,
+  -hicpp-vararg,
+  -llvm-*,
+  -llvmlibc-*,
+  -misc-non-private-member-variables-in-classes,
+  -modernize-use-trailing-return-type,
+  -objc-*,
+  -openmp-*,
+  -readability-braces-around-statements,
+  -readability-implicit-bool-conversion,
+  -readability-magic-numbers,
+  -zircon-*
+
+HeaderFilterRegex: '.*'
+
+AnalyzeTemporaryDtors: true
+
+CheckOptions:
+  - key: performance-unnecessary-value-param.WarnOnDefaultConstruction
+    value: true
+
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 25
+
+  - key: google-readability-function-size.StatementThreshold
+    value: 800
+
+  - key: modernize-loop-convert.MinConfidence
+    value: reasonable
+
+  - key: bugprone-branch-clone.MinCloneLength
+    value: 5
+
+  - key: cert-oop11-cpp.WarnOnInitializationOrder
+    value: true
+
+  - key: cppcoreguidelines-explicit-virtual-functions.IgnoreDestructors
+    value: true
+
+  - key: abseil-duration-factory-function-checker.DurationFactory
+    value: "absl::Seconds,absl::Minutes,absl::Hours"
+
+  - key: performance-move-const-arg.CheckTriviallyCopyable
+    value: true
