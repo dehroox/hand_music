@@ -6,7 +6,7 @@ MAKEFLAGS += --no-print-directory
 PROFILE ?= debug
 BUILD_DIR := build/$(PROFILE)
 
-CXX := g++
+CXX := ccache g++
 
 COMMON_FLAGS := \
     -std=c++23 \

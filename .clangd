@@ -1,0 +1,29 @@
+Diagnostics:
+  ClangTidy:
+    Add: 
+      - bugprone-*
+      - cert-*
+      - clang-analyzer-*
+      - cppcoreguidelines-*
+      - modernize-*
+      - performance-*
+      - portability-*
+      - readability-*
+      - misc-*
+      - hicpp-*
+    Remove:
+      - fuchsia-trailing-return
+    CheckOptions:
+      modernize-use-nullptr.NullMacros: "NULL"
+      modernize-use-trailing-return-type.MinimumTypeNameLength: "3"
+      modernize-use-auto.MinTypeNameLength: "5"
+      
+      readability-identifier-naming.VariableCase: snake_case
+      readability-identifier-naming.FunctionCase: snake_case
+      readability-identifier-naming.ClassCase: PascalCase
+      readability-identifier-naming.StructCase: PascalCase
+      readability-identifier-naming.NamespaceCase: PascalCase
+      readability-identifier-naming.EnumCase: PascalCase
+      readability-identifier-naming.EnumConstantCase: UPPER_CASE
+      readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+      readability-identifier-naming.ConstantCase: UPPER_CASE
