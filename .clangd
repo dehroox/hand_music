@@ -17,6 +17,7 @@ Diagnostics:
       - cppcoreguidelines-pro-type-vararg
       - hicpp-vararg
       - cppcoreguidelines-pro-bounds-pointer-arithmetic
+      - portability-simd-intrinsics
     CheckOptions:
       modernize-use-nullptr.NullMacros: "NULL"
       modernize-use-trailing-return-type.MinimumTypeNameLength: "3"

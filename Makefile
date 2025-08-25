@@ -24,7 +24,7 @@ COMMON_FLAGS := \
     -Wzero-as-null-pointer-constant \
     -Wnull-dereference -Wduplicated-cond -Wlogical-op \
     -Wuseless-cast -Wdouble-promotion \
-    -fstrict-aliasing -fno-omit-frame-pointer \
+    -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 \
     $(shell pkg-config --cflags Qt6Widgets | awk 'gsub("-I", "-isystem ")')
 
 COMMON_LD_FLAGS := $(shell pkg-config --libs Qt6Widgets)
