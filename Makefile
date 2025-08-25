@@ -24,9 +24,10 @@ COMMON_FLAGS := \
     -Wzero-as-null-pointer-constant \
     -Wnull-dereference -Wduplicated-cond -Wlogical-op \
     -Wuseless-cast -Wdouble-promotion \
-    -fstrict-aliasing -fno-omit-frame-pointer
+    -fstrict-aliasing -fno-omit-frame-pointer \
+    $(shell pkg-config --cflags Qt6Widgets | awk 'gsub("-I", "-isystem ")')
 
-COMMON_LD_FLAGS :=
+COMMON_LD_FLAGS := $(shell pkg-config --libs Qt6Widgets)
 
 ifeq ($(PROFILE),debug)
     CXXFLAGS := $(COMMON_FLAGS) -O0 -g3 -DDEBUG \
@@ -35,7 +36,7 @@ ifeq ($(PROFILE),debug)
     LDFLAGS := $(COMMON_LD_FLAGS) -fsanitize=address,undefined,leak \
                -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 else ifeq ($(PROFILE),release)
-    CXXFLAGS := $(COMMON_FLAGS) -O3 -DNDEBUG -flto -DNDEBUG
+    CXXFLAGS := $(COMMON_FLAGS) -O3 -DNDEBUG -flto -DNDEBUG -ffast-math
     LDFLAGS := $(COMMON_LD_FLAGS) -flto -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 else
     $(error Unknown profile "$(PROFILE)". Use: debug, release)

@@ -13,10 +13,15 @@ Diagnostics:
       - hicpp-*
     Remove:
       - fuchsia-trailing-return
+      - cppcoreguidelines-pro-type-union-access
+      - cppcoreguidelines-pro-type-vararg
+      - hicpp-vararg
+      - cppcoreguidelines-pro-bounds-pointer-arithmetic
     CheckOptions:
       modernize-use-nullptr.NullMacros: "NULL"
       modernize-use-trailing-return-type.MinimumTypeNameLength: "3"
       modernize-use-auto.MinTypeNameLength: "5"
+      readability-magic-numbers.IgnoredIntegerValues: '1;2;3;4;5'
       
       readability-identifier-naming.VariableCase: snake_case
       readability-identifier-naming.FunctionCase: snake_case
@@ -26,4 +31,3 @@ Diagnostics:
       readability-identifier-naming.EnumCase: PascalCase
       readability-identifier-naming.EnumConstantCase: UPPER_CASE
       readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
-      readability-identifier-naming.ConstantCase: UPPER_CASE
