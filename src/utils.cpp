@@ -5,6 +5,9 @@
 #include <cerrno>
 
 namespace Utils {
+
+// when an ioctl call is interrupted by a signal (EINTR), it should be retried.
+// this function wraps the ioctl call in a loop to handle such interruptions.
 auto continually_retry_ioctl(int file_descriptor, unsigned long request,
                              void* argument) -> int {
     int result = -1;
@@ -16,4 +19,5 @@ auto continually_retry_ioctl(int file_descriptor, unsigned long request,
     }
     return result;
 }
+
 }  // namespace Utils

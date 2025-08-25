@@ -24,14 +24,19 @@ auto main(int argc, char** argv) -> int {
         return 1;
     }
 
+    // select the highest available resolution
+    // (that complies with the camera's native aspect ratio)
+    // and configure the video format.
     FrameDimensions frame_dimensions =
         V4l2Device::select_highest_resolution(video_file_descriptor);
+
     if (!V4l2Device::configure_video_format(video_file_descriptor,
                                             frame_dimensions)) {
         V4l2Device::close_device(video_file_descriptor);
         return 1;
     }
 
+    // set up buffers for buffers of frams
     constexpr unsigned int BUFFER_COUNT = 4U;
     std::vector<MemoryMappedBuffer> mapped_buffers;
     if (!V4l2Device::setup_memory_mapped_buffers(
@@ -47,6 +52,7 @@ auto main(int argc, char** argv) -> int {
         return 1;
     }
 
+    // buffer for the frame itself
     std::vector<unsigned char> rgb_frame_buffer(
         static_cast<size_t>(frame_dimensions.width * frame_dimensions.height *
                             Constants::K_RGB_COMPONENTS));
@@ -63,6 +69,7 @@ auto main(int argc, char** argv) -> int {
         buffer.memory = V4L2_MEMORY_MMAP;
 
         while (running) {
+            // dequeue buffer
             if (Utils::continually_retry_ioctl(video_file_descriptor,
                                                VIDIOC_DQBUF, &buffer) == -1) {
                 continue;
@@ -72,6 +79,8 @@ auto main(int argc, char** argv) -> int {
                                     mapped_buffers[buffer.index].start_address),
                                 rgb_frame_buffer.data(), frame_dimensions);
 
+            // update the display with the new frame, this is done on the main
+            // thread to avoid GUI issues.
             QMetaObject::invokeMethod(
                 &display_label,
                 [&]() {
@@ -84,12 +93,14 @@ auto main(int argc, char** argv) -> int {
                 },
                 Qt::QueuedConnection);
 
+            // queue the buffer back to the driver for reuse.
             Utils::continually_retry_ioctl(video_file_descriptor, VIDIOC_QBUF,
                                            &buffer);
         }
     });
 
     int exit_code = QApplication::exec();
+
     running = false;
     capture_thread.join();
 

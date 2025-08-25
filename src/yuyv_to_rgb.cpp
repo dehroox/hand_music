@@ -7,6 +7,7 @@
 
 namespace {
 
+// clamps a value to the valid 8-bit RGB range (0-255).
 inline auto clamp_rgb_value(int value) -> unsigned char {
     auto unsigned_value = static_cast<unsigned int>(value);
     if (unsigned_value >
@@ -18,6 +19,9 @@ inline auto clamp_rgb_value(int value) -> unsigned char {
 
 }  // namespace
 
+// converts a frame from YUYV format to RGB format.
+// YUYV is a packed format where two pixels share U and V components.
+// the layout is Y0, U, Y1, V for two pixels.
 void convert_yuyv_to_rgb(const unsigned char* yuyv_frame_pointer,
                          unsigned char* rgb_frame_pointer,
                          FrameDimensions frame_dimensions) {
@@ -37,11 +41,13 @@ void convert_yuyv_to_rgb(const unsigned char* yuyv_frame_pointer,
             (static_cast<size_t>(row_index * frame_dimensions.stride_bytes));
         unsigned int pixel_index_in_row = row_index * frame_dimensions.width;
 
+        // process two pixels per iter
         for (unsigned int column_index = 0;
              column_index + 1 < frame_dimensions.width;
              column_index += 2, pixel_index_in_row += 2) {
             const unsigned int yuyv_byte_offset = column_index * 2;
 
+            // extract Y, U, and V components from the YUYV data.
             const int y_pixel0 = yuyv_row_start[yuyv_byte_offset + 0];
             const int u_component =
                 yuyv_row_start[yuyv_byte_offset + 1] - Constants::K_U_OFFSET;
@@ -49,6 +55,7 @@ void convert_yuyv_to_rgb(const unsigned char* yuyv_frame_pointer,
             const int v_component =
                 yuyv_row_start[yuyv_byte_offset + 3] - Constants::K_U_OFFSET;
 
+            // calculate RGB values using standard conversion formulas.
             const int64_t red_contribution = red_v_mult * v_component;
             const int64_t green_contribution =
                 (green_u_mult * u_component) + (green_v_mult * v_component);
@@ -57,6 +64,7 @@ void convert_yuyv_to_rgb(const unsigned char* yuyv_frame_pointer,
             const unsigned int rgb_pixel_base_index =
                 pixel_index_in_row * Constants::K_RGB_COMPONENTS;
 
+            // --- Pixel 0 ---
             rgb_data[rgb_pixel_base_index + 0] = clamp_rgb_value(
                 int((y_pixel0 * rgb_mul + red_contribution) / rgb_mul));
             rgb_data[rgb_pixel_base_index + 1] = clamp_rgb_value(
@@ -64,6 +72,7 @@ void convert_yuyv_to_rgb(const unsigned char* yuyv_frame_pointer,
             rgb_data[rgb_pixel_base_index + 2] = clamp_rgb_value(
                 int((y_pixel0 * rgb_mul + blue_contribution) / rgb_mul));
 
+            // --- Pixel 1 ---
             rgb_data[rgb_pixel_base_index + 3] = clamp_rgb_value(
                 int((y_pixel1 * rgb_mul + red_contribution) / rgb_mul));
             rgb_data[rgb_pixel_base_index + 4] =
