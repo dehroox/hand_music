@@ -24,9 +24,9 @@ COMMON_FLAGS := \
     -Wzero-as-null-pointer-constant \
     -Wnull-dereference -Wduplicated-cond -Wlogical-op \
     -Wuseless-cast -Wdouble-promotion \
-    -fstrict-aliasing -fno-omit-frame-pointer -isystem /usr/include/opencv4
+    -fstrict-aliasing -fno-omit-frame-pointer
 
-COMMON_LD_FLAGS := $(shell pkg-config --libs opencv4)
+COMMON_LD_FLAGS :=
 
 ifeq ($(PROFILE),debug)
     CXXFLAGS := $(COMMON_FLAGS) -O0 -g3 -DDEBUG \
