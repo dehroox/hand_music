@@ -89,7 +89,8 @@ auto main(int argc, char** argv) -> int {
                         static_cast<int>(frame_dimensions.width),
                         static_cast<int>(frame_dimensions.height),
                         QImage::Format_RGB888);
-                    display_label.setPixmap(QPixmap::fromImage(frame_image));
+                    display_label.setPixmap(QPixmap::fromImage(
+                        frame_image.mirrored(true, false)));
                 },
                 Qt::QueuedConnection);
 
