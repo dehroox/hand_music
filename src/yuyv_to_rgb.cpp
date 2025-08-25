@@ -1,23 +1,7 @@
-#include "yuyv_to_rgb.hpp"
-
 #include <cstddef>
 #include <cstdint>
 
-#include "constants.hpp"
-
-namespace {
-
-// clamps a value to the valid 8-bit RGB range (0-255).
-inline auto clamp_rgb_value(int value) -> unsigned char {
-    auto unsigned_value = static_cast<unsigned int>(value);
-    if (unsigned_value >
-        static_cast<unsigned int>(Constants::K_MAX_RGB_VALUE)) {
-        unsigned_value = Constants::K_MAX_RGB_VALUE;
-    }
-    return static_cast<unsigned char>(unsigned_value);
-}
-
-}  // namespace
+#include "hand_music.hpp"
 
 // converts a frame from YUYV format to RGB format.
 // YUYV is a packed format where two pixels share U and V components.
@@ -65,21 +49,26 @@ void convert_yuyv_to_rgb(const unsigned char* yuyv_frame_pointer,
                 pixel_index_in_row * Constants::K_RGB_COMPONENTS;
 
             // --- Pixel 0 ---
-            rgb_data[rgb_pixel_base_index + 0] = clamp_rgb_value(
-                int((y_pixel0 * rgb_mul + red_contribution) / rgb_mul));
-            rgb_data[rgb_pixel_base_index + 1] = clamp_rgb_value(
-                int((y_pixel0 * rgb_mul - green_contribution) / rgb_mul));
-            rgb_data[rgb_pixel_base_index + 2] = clamp_rgb_value(
-                int((y_pixel0 * rgb_mul + blue_contribution) / rgb_mul));
+            rgb_data[rgb_pixel_base_index + 0] =
+                clamp_rgb_value(static_cast<int>(
+                    (y_pixel0 * rgb_mul + red_contribution) / rgb_mul));
+            rgb_data[rgb_pixel_base_index + 1] =
+                clamp_rgb_value(static_cast<int>(
+                    (y_pixel0 * rgb_mul - green_contribution) / rgb_mul));
+            rgb_data[rgb_pixel_base_index + 2] =
+                clamp_rgb_value(static_cast<int>(
+                    (y_pixel0 * rgb_mul + blue_contribution) / rgb_mul));
 
             // --- Pixel 1 ---
-            rgb_data[rgb_pixel_base_index + 3] = clamp_rgb_value(
-                int((y_pixel1 * rgb_mul + red_contribution) / rgb_mul));
-            rgb_data[rgb_pixel_base_index + 4] =
-                clamp_rgb_value(int((y_pixel1 * rgb_mul - green_contribution) /
-                                    rgb_mul));  // NOLINTNEXTLINE
-            rgb_data[rgb_pixel_base_index + 5] = clamp_rgb_value(
-                int((y_pixel1 * rgb_mul + blue_contribution) / rgb_mul));
+            rgb_data[rgb_pixel_base_index + 3] =
+                clamp_rgb_value(static_cast<int>(
+                    (y_pixel1 * rgb_mul + red_contribution) / rgb_mul));
+            rgb_data[rgb_pixel_base_index + 4] = clamp_rgb_value(
+                static_cast<int>((y_pixel1 * rgb_mul - green_contribution) /
+                                 rgb_mul));  // NOLINTNEXTLINE
+            rgb_data[rgb_pixel_base_index + 5] =
+                clamp_rgb_value(static_cast<int>(
+                    (y_pixel1 * rgb_mul + blue_contribution) / rgb_mul));
         }
     }
 }

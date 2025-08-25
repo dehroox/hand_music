@@ -1,5 +1,3 @@
-#include "v4l2_device.hpp"
-
 #include <fcntl.h>
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
@@ -8,25 +6,22 @@
 
 #include <cerrno>
 #include <iostream>
-#include <vector>
 
-#include "utils.hpp"
+#include "hand_music.hpp"
 
 namespace V4l2Device {
 
 auto open(const char* device_path) -> int {
-    const int FILE_DESCRIPTOR = ::open(device_path, O_RDWR);
-    if (FILE_DESCRIPTOR == -1) {
+    const int file_descriptor = ::open(device_path, O_RDWR);
+    if (file_descriptor == -1) {
         std::cerr << "Failed to open video device " << device_path << "\n";
         return -1;
     }
-    return FILE_DESCRIPTOR;
+    return file_descriptor;
 }
 
 void close_device(int file_descriptor) { ::close(file_descriptor); }
 
-// queries the device for all supported YUYV resolutions and selects the
-// largest one.
 auto select_highest_resolution(int video_file_descriptor) -> FrameDimensions {
     FrameDimensions frame_dimensions{
         .width = 0U, .height = 0U, .stride_bytes = 0U};
@@ -35,10 +30,8 @@ auto select_highest_resolution(int video_file_descriptor) -> FrameDimensions {
     format_description.index = 0;
     format_description.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    // iterate through all available formats.
     while (ioctl(video_file_descriptor, VIDIOC_ENUM_FMT, &format_description) !=
            -1) {
-        // we are only interested in the YUYV format.
         if (format_description.pixelformat != V4L2_PIX_FMT_YUYV) {
             ++format_description.index;
             continue;
@@ -57,7 +50,6 @@ auto select_highest_resolution(int video_file_descriptor) -> FrameDimensions {
                     frame_dimensions.height = frame_size.discrete.height;
                 }
             } else if (frame_size.type == V4L2_FRMSIZE_TYPE_STEPWISE) {
-                // for stepwise, just select the maximum supported resolution.
                 frame_dimensions.width = frame_size.stepwise.max_width;
                 frame_dimensions.height = frame_size.stepwise.max_height;
             }
@@ -69,7 +61,8 @@ auto select_highest_resolution(int video_file_descriptor) -> FrameDimensions {
     std::cout << "Using highest supported resolution: "
               << frame_dimensions.width << "x" << frame_dimensions.height
               << " (Aspect ratio: "
-              << double(frame_dimensions.width) / frame_dimensions.height
+              << static_cast<double>(frame_dimensions.width) /
+                     frame_dimensions.height
               << ")\n";
 
     return frame_dimensions;
@@ -94,53 +87,48 @@ auto configure_video_format(int video_file_descriptor,
     return true;
 }
 
-// requests buffers from the device, maps them into application memory, and
-// queues them for capturing.
-auto setup_memory_mapped_buffers(
-    int video_file_descriptor, std::vector<MemoryMappedBuffer>& mapped_buffers,
-    unsigned int buffer_count) -> bool {
+auto setup_memory_mapped_buffers(Device& device, unsigned int buffer_count)
+    -> bool {
     v4l2_requestbuffers request_buffers{};
     request_buffers.count = buffer_count;
     request_buffers.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     request_buffers.memory = V4L2_MEMORY_MMAP;
 
-    // request the buffers from the driver.
-    if (Utils::continually_retry_ioctl(video_file_descriptor, VIDIOC_REQBUFS,
+    if (Utils::continually_retry_ioctl(device.file_descriptor, VIDIOC_REQBUFS,
                                        &request_buffers) == -1 ||
         request_buffers.count < 2) {
         std::cerr << "VIDIOC_REQBUFS failed\n";
         return false;
     }
 
-    mapped_buffers.reserve(request_buffers.count);
+    device.buffer_count = request_buffers.count;
 
-    for (unsigned int buffer_index = 0; buffer_index < request_buffers.count;
+    for (unsigned int buffer_index = 0; buffer_index < device.buffer_count;
          ++buffer_index) {
         v4l2_buffer buffer{};
         buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         buffer.memory = V4L2_MEMORY_MMAP;
         buffer.index = buffer_index;
 
-        // query buffer information.
-        if (Utils::continually_retry_ioctl(video_file_descriptor,
+        if (Utils::continually_retry_ioctl(device.file_descriptor,
                                            VIDIOC_QUERYBUF, &buffer) == -1) {
             std::cerr << "VIDIOC_QUERYBUF failed\n";
             return false;
         }
 
-        // map the buffer into the application's address space.
-        void* start_address =
+        device.mapped_buffers.at(buffer.index).start_address =
             mmap(nullptr, buffer.length, PROT_READ | PROT_WRITE, MAP_SHARED,
-                 video_file_descriptor, buffer.m.offset);
-        if (start_address == MAP_FAILED) {
+                 device.file_descriptor, buffer.m.offset);
+
+        if (device.mapped_buffers.at(buffer.index).start_address ==
+            MAP_FAILED) {
             std::cerr << "Memory mapping failed\n";
             return false;
         }
 
-        mapped_buffers.push_back({start_address, buffer.length});
+        device.mapped_buffers.at(buffer.index).length_bytes = buffer.length;
 
-        // queue the buffer for capturing.
-        if (Utils::continually_retry_ioctl(video_file_descriptor, VIDIOC_QBUF,
+        if (Utils::continually_retry_ioctl(device.file_descriptor, VIDIOC_QBUF,
                                            &buffer) == -1) {
             std::cerr << "VIDIOC_QBUF failed\n";
             return false;
@@ -150,9 +138,10 @@ auto setup_memory_mapped_buffers(
     return true;
 }
 
-void unmap_buffers(std::vector<MemoryMappedBuffer>& mapped_buffers) {
-    for (auto& buffer : mapped_buffers) {
-        munmap(buffer.start_address, buffer.length_bytes);
+void unmap_buffers(Device& device) {
+    for (unsigned int i = 0; i < device.buffer_count; ++i) {
+        munmap(device.mapped_buffers.at(i).start_address,
+               device.mapped_buffers.at(i).length_bytes);
     }
 }
 
