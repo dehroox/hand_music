@@ -73,8 +73,7 @@ auto main(int argc, char** argv) -> int {
 
             convert_yuyv_to_rgb(
                 static_cast<unsigned char*>(
-                    device.mapped_buffers.at(static_cast<size_t>(buffer.index))
-                        .start_address),
+                    device.mapped_buffers.at(buffer.index).start_address),
                 rgb_frame_buffer.data(), frame_dimensions);
 
             QMetaObject::invokeMethod(
@@ -93,7 +92,7 @@ auto main(int argc, char** argv) -> int {
         }
     });
 
-    int exit_code = QApplication::exec();
+    const int exit_code = QApplication::exec();
     running = false;
     capture_thread.join();
 

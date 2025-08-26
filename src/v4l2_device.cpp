@@ -54,8 +54,7 @@ auto select_highest_resolution(int video_file_descriptor) -> FrameDimensions {
     std::cout << "Using highest supported resolution: "
               << frame_dimensions.width << "x" << frame_dimensions.height
               << " (Aspect ratio: "
-              << static_cast<double>(frame_dimensions.width) /
-                     frame_dimensions.height
+              << (frame_dimensions.width * 1.0) / frame_dimensions.height
               << ")\n";
 
     return frame_dimensions;

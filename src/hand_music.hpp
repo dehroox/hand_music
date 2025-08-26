@@ -83,12 +83,12 @@ void stop_video_stream(int video_file_descriptor);
 
 // clamps a value to the valid 8-bit RGB range (0-255).
 static inline auto clamp_rgb_value(int value) -> unsigned char {
-    auto unsigned_value = static_cast<unsigned int>(value);
+    auto unsigned_value = static_cast<unsigned char>(value);
     if (unsigned_value >
         static_cast<unsigned int>(Constants::K_MAX_RGB_VALUE)) {
         unsigned_value = Constants::K_MAX_RGB_VALUE;
     }
-    return static_cast<unsigned char>(unsigned_value);
+    return unsigned_value;
 }
 
 void convert_yuyv_to_rgb(const unsigned char* __restrict yuyv_frame_pointer,
