@@ -8,6 +8,8 @@ Diagnostics:
       - misc-*
       - cert-*
       - llvm-*
+    Remove:
+      - cert-err33-c
     CheckOptions:
       bugprone-exception-escape: true
       bugprone-signed-char-misuse: true

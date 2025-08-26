@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,245 +17,347 @@
 
 #define MICROSECONDS_IN_SECOND 1000000LL
 #define NANOSECONDS_IN_MICROSECOND 1000LL
+#define WINDOW_BORDER_WIDTH 1
+#define WINDOW_POSITION_X 10
+#define WINDOW_POSITION_Y 10
+#define BITMAP_PAD 32
+#define VIDEO_DEVICE_PATH "/dev/video0"
+#define VIDEO_MAX_BUFFERS V4L2_MAX_BUFFERS
 
-struct CaptureThreadArgs {
+typedef struct {
     struct V4l2Device_Device *device;
     Display *display;
     Window window;
     int screen;
     XImage *x_image;
     unsigned char *rgb_frame_buffer;
+    unsigned char *rgb_flipped_buffer;
     unsigned char *gray_frame_buffer;
     struct FrameDimensions frame_dimensions;
-    _Atomic bool *running;
-};
+    _Atomic bool *running_flag;
+} CaptureThreadArguments;
 
-void *capture_thread_func(void *arg) {
-    struct CaptureThreadArgs *args = (struct CaptureThreadArgs *)arg;
-    struct V4l2Device_Device *device = args->device;
-    Display *display = args->display;
-    Window window = args->window;
-    int screen = args->screen;
-    XImage *x_image = args->x_image;
-    unsigned char *rgb_frame_buffer = args->rgb_frame_buffer;
-    unsigned char *gray_frame_buffer = args->gray_frame_buffer;
-    struct FrameDimensions frame_dimensions = args->frame_dimensions;
-    _Atomic bool *running = args->running;
+static inline void flip_rgb_horizontal(
+    const unsigned char *source_rgb_buffer,
+    unsigned char *destination_rgb_buffer,
+    struct FrameDimensions frame_dimensions) {
+    const unsigned int number_of_bytes_per_pixel_in_rgba_format = 4;
+    const size_t number_of_bytes_per_row_of_pixels =
+        (size_t)frame_dimensions.width *
+        number_of_bytes_per_pixel_in_rgba_format;
 
-    struct v4l2_buffer buffer;
-    memset(&buffer, 0, sizeof(buffer));
-    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buffer.memory = V4L2_MEMORY_MMAP;
+    for (unsigned int current_row_index = 0;
+         current_row_index < frame_dimensions.height; ++current_row_index) {
+        const unsigned char *source_row_pointer_for_current_row =
+            source_rgb_buffer +
+            ((size_t)current_row_index * number_of_bytes_per_row_of_pixels);
 
-    const int width_int = (int)frame_dimensions.width;
-    const int height_int = (int)frame_dimensions.height;
+        unsigned char *destination_row_pointer_for_current_row_flipped =
+            destination_rgb_buffer +
+            ((size_t)current_row_index * number_of_bytes_per_row_of_pixels);
 
-    long long total_duration_rgb = 0;
-    long long total_duration_gray = 0;
-    int frame_count = 0;
+        for (unsigned int current_column_index = 0;
+             current_column_index < frame_dimensions.width;
+             ++current_column_index) {
+            const unsigned int source_pixel_column_index = current_column_index;
+            const unsigned int destination_pixel_column_index_flipped =
+                frame_dimensions.width - 1 - current_column_index;
 
-    struct timespec start_rgb;
-    struct timespec end_rgb;
-    struct timespec start_gray;
-    struct timespec end_gray;
+            const unsigned char *source_pixel_pointer =
+                source_row_pointer_for_current_row +
+                ((size_t)source_pixel_column_index *
+                 number_of_bytes_per_pixel_in_rgba_format);
 
-    while (atomic_load_explicit(running, memory_order_relaxed)) {
-        if (continually_retry_ioctl(device->file_descriptor, VIDIOC_DQBUF,
-                                    &buffer) == -1) {
+            unsigned char *destination_pixel_pointer_flipped =
+                destination_row_pointer_for_current_row_flipped +
+                ((size_t)destination_pixel_column_index_flipped *
+                 number_of_bytes_per_pixel_in_rgba_format);
+
+            destination_pixel_pointer_flipped[0] = source_pixel_pointer[0];
+            destination_pixel_pointer_flipped[1] = source_pixel_pointer[1];
+            destination_pixel_pointer_flipped[2] = source_pixel_pointer[2];
+            destination_pixel_pointer_flipped[3] = source_pixel_pointer[3];
+        }
+    }
+}
+
+inline static long long measure_frame_conversion_time(
+    void (*convert_func)(const unsigned char *, unsigned char *,
+                         struct FrameDimensions),
+    const unsigned char *source_frame, unsigned char *destination_frame,
+    struct FrameDimensions frame_dimensions) {
+    struct timespec start_time;
+    struct timespec end_time;
+
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    convert_func(source_frame, destination_frame, frame_dimensions);
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+
+    return ((end_time.tv_sec - start_time.tv_sec) * MICROSECONDS_IN_SECOND) +
+           ((end_time.tv_nsec - start_time.tv_nsec) /
+            NANOSECONDS_IN_MICROSECOND);
+}
+
+inline static void *capture_thread_function(void *arguments) {
+    CaptureThreadArguments *thread_arguments =
+        (CaptureThreadArguments *)arguments;
+
+    struct v4l2_buffer capture_buffer;
+    long long total_rgb_conversion_time_microseconds;
+    long long total_gray_conversion_time_microseconds;
+    int captured_frame_count;
+
+    total_rgb_conversion_time_microseconds = 0;
+    total_gray_conversion_time_microseconds = 0;
+    captured_frame_count = 0;
+
+    memset(&capture_buffer, 0, sizeof(capture_buffer));
+    capture_buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    capture_buffer.memory = V4L2_MEMORY_MMAP;
+
+    while (atomic_load_explicit(thread_arguments->running_flag,
+                                memory_order_relaxed)) {
+        int ioctl_result =
+            continually_retry_ioctl(thread_arguments->device->file_descriptor,
+                                    VIDIOC_DQBUF, &capture_buffer);
+        if (ioctl_result == -1) {
             continue;
         }
 
-        unsigned char *yuv_data =
-            (unsigned char *)device->mapped_buffers[buffer.index].start_address;
+        unsigned char *yuv_frame_data =
+            (unsigned char *)thread_arguments->device
+                ->mapped_buffers[capture_buffer.index]
+                .start_address;
 
-        (void)clock_gettime(1, &start_rgb);
-        convert_yuv_to_rgb(yuv_data, rgb_frame_buffer, frame_dimensions);
-        (void)clock_gettime(1, &end_rgb);
-        total_duration_rgb += (long long)(end_rgb.tv_sec - start_rgb.tv_sec) *
-                                  MICROSECONDS_IN_SECOND +
-                              (long long)(end_rgb.tv_nsec - start_rgb.tv_nsec) /
-                                  NANOSECONDS_IN_MICROSECOND;
+        total_rgb_conversion_time_microseconds +=
+            measure_frame_conversion_time(convert_yuv_to_rgb, yuv_frame_data,
+                                          thread_arguments->rgb_frame_buffer,
+                                          thread_arguments->frame_dimensions);
+        total_gray_conversion_time_microseconds +=
+            measure_frame_conversion_time(convert_yuv_to_gray, yuv_frame_data,
+                                          thread_arguments->gray_frame_buffer,
+                                          thread_arguments->frame_dimensions);
 
-        (void)clock_gettime(1, &start_gray);
-        convert_yuv_to_gray(yuv_data, gray_frame_buffer, frame_dimensions);
-        (void)clock_gettime(1, &end_gray);
-        total_duration_gray +=
-            (long long)(end_gray.tv_sec - start_gray.tv_sec) *
-                MICROSECONDS_IN_SECOND +
-            (long long)(end_gray.tv_nsec - start_gray.tv_nsec) /
-                NANOSECONDS_IN_MICROSECOND;
+        captured_frame_count++;
 
-        frame_count++;
+        flip_rgb_horizontal(thread_arguments->rgb_frame_buffer,
+                            thread_arguments->rgb_flipped_buffer,
+                            thread_arguments->frame_dimensions);
 
-        XPutImage(display, window, DefaultGC(display, screen), x_image, 0, 0, 0,
-                  0, (unsigned int)width_int, (unsigned int)height_int);
-        XFlush(display);
+        thread_arguments->x_image->data =
+            (char *)thread_arguments->rgb_flipped_buffer;
 
-        continually_retry_ioctl(device->file_descriptor, VIDIOC_QBUF, &buffer);
+        XPutImage(
+            thread_arguments->display, thread_arguments->window,
+            DefaultGC(thread_arguments->display, thread_arguments->screen),
+            thread_arguments->x_image, 0, 0, 0, 0,
+            thread_arguments->frame_dimensions.width,
+            thread_arguments->frame_dimensions.height);
+        XFlush(thread_arguments->display);
+
+        continually_retry_ioctl(thread_arguments->device->file_descriptor,
+                                VIDIOC_QBUF, &capture_buffer);
     }
 
-    if (frame_count > 0) {
-        (void)fprintf(
-            stdout, "Average YUV to RGB conversion time: %lld microseconds.\n",
-            total_duration_rgb / frame_count);
-        (void)fprintf(
-            stdout, "Average YUV to Gray conversion time: %lld microseconds.\n",
-            total_duration_gray / frame_count);
+    if (captured_frame_count > 0) {
+        printf("Average YUV to RGB conversion time: %lld microseconds\n",
+               total_rgb_conversion_time_microseconds / captured_frame_count);
+        printf("Average YUV to Gray conversion time: %lld microseconds\n",
+               total_gray_conversion_time_microseconds / captured_frame_count);
     }
+
     return NULL;
 }
 
-int main() {
-    Display *display = XOpenDisplay(nullptr);
-    if (display == NULL) {
-        (void)fprintf(stderr, "Cannot open display\n");
+int main(void) {
+    Display *x_display;
+    struct V4l2Device_Device video_device;
+    struct FrameDimensions selected_frame_dimensions;
+    int default_screen_number;
+    Window video_window;
+    Atom wm_delete_window_atom;
+    XImage *x_image_for_display;
+    unsigned char *rgb_frame_buffer;
+    unsigned char *rgb_flipped_buffer;
+    unsigned char *gray_frame_buffer;
+    size_t rgb_frame_buffer_size;
+    size_t gray_frame_buffer_size;
+    _Atomic bool running_flag;
+    pthread_t capture_thread_handle;
+    CaptureThreadArguments capture_thread_arguments;
+    XEvent received_event;
+
+    /* Initialization */
+    x_display = NULL;
+    x_image_for_display = NULL;
+    rgb_frame_buffer = NULL;
+    gray_frame_buffer = NULL;
+    running_flag = true;
+    memset(&video_device, 0, sizeof(video_device));
+    memset(&selected_frame_dimensions, 0, sizeof(selected_frame_dimensions));
+
+    /* Open X11 display */
+    x_display = XOpenDisplay(NULL);
+    if (x_display == NULL) {
+        fputs("Cannot open X display\n", stderr);
         return 1;
     }
 
-    struct V4l2Device_Device device;
-    memset(&device, 0, sizeof(device));
-    device.file_descriptor = V4l2Device_open("/dev/video0");
-    if (device.file_descriptor == -1) {
-        XCloseDisplay(display);
+    /* Open video device */
+    video_device.file_descriptor = V4l2Device_open(VIDEO_DEVICE_PATH);
+    if (video_device.file_descriptor == -1) {
+        XCloseDisplay(x_display);
         return 1;
     }
 
-    struct FrameDimensions frame_dimensions =
-        V4l2Device_select_highest_resolution(device.file_descriptor);
+    selected_frame_dimensions =
+        V4l2Device_select_highest_resolution(video_device.file_descriptor);
+    default_screen_number = DefaultScreen(x_display);
 
-    int screen = DefaultScreen(display);
-    const int WINDOW_POS_X = 10;
-    const int WINDOW_POS_Y = 10;
+    /* Create X11 window */
+    video_window = XCreateSimpleWindow(
+        x_display, RootWindow(x_display, default_screen_number),
+        WINDOW_POSITION_X, WINDOW_POSITION_Y, selected_frame_dimensions.width,
+        selected_frame_dimensions.height, WINDOW_BORDER_WIDTH,
+        BlackPixel(x_display, default_screen_number),
+        WhitePixel(x_display, default_screen_number));
 
-    Window window = XCreateSimpleWindow(
-        display, RootWindow(display, screen), WINDOW_POS_X, WINDOW_POS_Y,
-        frame_dimensions.width, frame_dimensions.height, 1,
-        BlackPixel(display, screen), WhitePixel(display, screen));
-
-    XSelectInput(display, window,
+    XSelectInput(x_display, video_window,
                  ExposureMask | KeyPressMask | StructureNotifyMask);
-    XMapWindow(display, window);
+    XMapWindow(x_display, video_window);
 
-    Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(display, window, &wmDeleteMessage, 1);
+    wm_delete_window_atom = XInternAtom(x_display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(x_display, video_window, &wm_delete_window_atom, 1);
 
-    if (!V4l2Device_configure_video_format(device.file_descriptor,
-                                           &frame_dimensions)) {
-        V4l2Device_close_device(device.file_descriptor);
-        XCloseDisplay(display);
+    /* Configure video device */
+    if (!V4l2Device_configure_video_format(video_device.file_descriptor,
+                                           &selected_frame_dimensions) ||
+        !V4l2Device_setup_memory_mapped_buffers(&video_device,
+                                                VIDEO_MAX_BUFFERS) ||
+        !V4l2Device_start_video_stream(video_device.file_descriptor)) {
+        V4l2Device_close_device(video_device.file_descriptor);
+        XCloseDisplay(x_display);
         return 1;
     }
 
-    if (!V4l2Device_setup_memory_mapped_buffers(&device, V4L2_MAX_BUFFERS)) {
-        V4l2Device_close_device(device.file_descriptor);
-        XCloseDisplay(display);
-        return 1;
-    }
-
-    if (!V4l2Device_start_video_stream(device.file_descriptor)) {
-        V4l2Device_unmap_buffers(&device);
-        V4l2Device_close_device(device.file_descriptor);
-        XCloseDisplay(display);
-        return 1;
-    }
-
-    const int frame_bytes =
-        (int)frame_dimensions.width * (int)frame_dimensions.height * 4;
-    unsigned char *rgb_frame_buffer =
-        (unsigned char *)malloc((size_t)frame_bytes);
+    /* Allocate frame buffers */
+    rgb_frame_buffer_size = (size_t)selected_frame_dimensions.width *
+                            selected_frame_dimensions.height * 4;
+    rgb_frame_buffer = calloc(1, rgb_frame_buffer_size);
     if (rgb_frame_buffer == NULL) {
-        (void)fprintf(stderr, "Failed to allocate rgb_frame_buffer\n");
-        V4l2Device_unmap_buffers(&device);
-        V4l2Device_close_device(device.file_descriptor);
-        XCloseDisplay(display);
+        fputs("Failed to allocate RGB frame buffer\n", stderr);
+        V4l2Device_stop_video_stream(video_device.file_descriptor);
+        V4l2Device_unmap_buffers(&video_device);
+        V4l2Device_close_device(video_device.file_descriptor);
+        XCloseDisplay(x_display);
         return 1;
     }
-    memset(rgb_frame_buffer, 0, (size_t)frame_bytes);
 
-    const int gray_frame_bytes =
-        (int)frame_dimensions.width * (int)frame_dimensions.height;
-    unsigned char *gray_frame_buffer =
-        (unsigned char *)malloc((size_t)gray_frame_bytes);
+    rgb_flipped_buffer = calloc(1, rgb_frame_buffer_size);
+    if (rgb_flipped_buffer == NULL) {
+        fputs("Failed to allocate RGB flipped buffer\n", stderr);
+        free(gray_frame_buffer);
+        free(rgb_frame_buffer);
+        V4l2Device_stop_video_stream(video_device.file_descriptor);
+        V4l2Device_unmap_buffers(&video_device);
+        V4l2Device_close_device(video_device.file_descriptor);
+        XCloseDisplay(x_display);
+        return 1;
+    }
+
+    gray_frame_buffer_size = (size_t)selected_frame_dimensions.width *
+                             selected_frame_dimensions.height;
+    gray_frame_buffer = calloc(1, gray_frame_buffer_size);
     if (gray_frame_buffer == NULL) {
-        (void)fprintf(stderr, "Failed to allocate gray_frame_buffer\n");
+        fputs("Failed to allocate Gray frame buffer\n", stderr);
         free(rgb_frame_buffer);
-        V4l2Device_unmap_buffers(&device);
-        V4l2Device_close_device(device.file_descriptor);
-        XCloseDisplay(display);
+        free(rgb_flipped_buffer);
+        V4l2Device_stop_video_stream(video_device.file_descriptor);
+        V4l2Device_unmap_buffers(&video_device);
+        V4l2Device_close_device(video_device.file_descriptor);
+        XCloseDisplay(x_display);
         return 1;
     }
-    memset(gray_frame_buffer, 0, (size_t)gray_frame_bytes);
 
-    const int bitmap_pad = 32;
-    XImage *x_image = XCreateImage(display, DefaultVisual(display, screen),
-                                   (unsigned int)DefaultDepth(display, screen),
-                                   ZPixmap, 0, nullptr, frame_dimensions.width,
-                                   frame_dimensions.height, bitmap_pad, 0);
-    if (x_image == NULL) {
-        (void)fprintf(stderr, "Failed to create XImage\n");
-        free(rgb_frame_buffer);
+    /* Create XImage for displaying RGB frames */
+    x_image_for_display =
+        XCreateImage(x_display, DefaultVisual(x_display, default_screen_number),
+                     DefaultDepth(x_display, default_screen_number), ZPixmap, 0,
+                     (char *)rgb_frame_buffer, selected_frame_dimensions.width,
+                     selected_frame_dimensions.height, BITMAP_PAD, 0);
+    if (x_image_for_display == NULL) {
+        fputs("Failed to create XImage\n", stderr);
         free(gray_frame_buffer);
-        V4l2Device_unmap_buffers(&device);
-        V4l2Device_close_device(device.file_descriptor);
-        XCloseDisplay(display);
-        return 1;
-    }
-    (void)fprintf(stdout, "XImage: %p\n", (void *)x_image);
-    x_image->data = (char *)rgb_frame_buffer;
-    x_image->f.destroy_image = False;
-
-    _Atomic bool running = true;
-    pthread_t capture_thread = 0;
-
-    struct CaptureThreadArgs thread_args = {
-        .device = &device,
-        .display = display,
-        .window = window,
-        .screen = screen,
-        .x_image = x_image,
-        .rgb_frame_buffer = rgb_frame_buffer,
-        .gray_frame_buffer = gray_frame_buffer,
-        .frame_dimensions = frame_dimensions,
-        .running = &running};
-
-    if (pthread_create(&capture_thread, nullptr, capture_thread_func,
-                       &thread_args) != 0) {
-        (void)fprintf(stderr, "Failed to create capture thread\n");
         free(rgb_frame_buffer);
+        free(rgb_flipped_buffer);
+        V4l2Device_stop_video_stream(video_device.file_descriptor);
+        V4l2Device_unmap_buffers(&video_device);
+        V4l2Device_close_device(video_device.file_descriptor);
+        XCloseDisplay(x_display);
+        return 1;
+    }
+    x_image_for_display->f.destroy_image = False;
+
+    /* Setup capture thread arguments */
+    capture_thread_arguments.device = &video_device;
+    capture_thread_arguments.display = x_display;
+    capture_thread_arguments.window = video_window;
+    capture_thread_arguments.screen = default_screen_number;
+    capture_thread_arguments.x_image = x_image_for_display;
+    capture_thread_arguments.rgb_frame_buffer = rgb_frame_buffer;
+    capture_thread_arguments.rgb_flipped_buffer = rgb_flipped_buffer;
+    capture_thread_arguments.gray_frame_buffer = gray_frame_buffer;
+    capture_thread_arguments.frame_dimensions = selected_frame_dimensions;
+    capture_thread_arguments.running_flag = &running_flag;
+
+    /* Start capture thread */
+    if (pthread_create(&capture_thread_handle, NULL, capture_thread_function,
+                       &capture_thread_arguments) != 0) {
+        fputs("Failed to create capture thread\n", stderr);
+        XDestroyImage(x_image_for_display);
         free(gray_frame_buffer);
-        XDestroyImage(x_image);
-        V4l2Device_unmap_buffers(&device);
-        V4l2Device_close_device(device.file_descriptor);
-        XCloseDisplay(display);
+        free(rgb_frame_buffer);
+        free(rgb_flipped_buffer);
+        V4l2Device_stop_video_stream(video_device.file_descriptor);
+        V4l2Device_unmap_buffers(&video_device);
+        V4l2Device_close_device(video_device.file_descriptor);
+        XCloseDisplay(x_display);
         return 1;
     }
 
-    XEvent event;
-    while (atomic_load_explicit(&running, memory_order_relaxed)) {
-        XNextEvent(display, &event);
-        if (event.type == KeyPress) {
-            KeySym key = XLookupKeysym(&event.xkey, 0);
-            if (key == XK_Escape || key == XK_q) {
-                atomic_store_explicit(&running, false, memory_order_relaxed);
+    /* Event loop */
+    while (atomic_load_explicit(&running_flag, memory_order_relaxed)) {
+        XNextEvent(x_display, &received_event);
+
+        if (received_event.type == KeyPress) {
+            KeySym pressed_key = XLookupKeysym(&received_event.xkey, 0);
+            if (pressed_key == XK_Escape || pressed_key == XK_q) {
+                atomic_store_explicit(&running_flag, false,
+                                      memory_order_relaxed);
             }
-        } else if (event.type == ClientMessage) {
-            if ((Atom)event.xclient.data.l[0] == wmDeleteMessage) {
-                atomic_store_explicit(&running, false, memory_order_relaxed);
+        }
+
+        if (received_event.type == ClientMessage) {
+            if ((Atom)received_event.xclient.data.l[0] ==
+                wm_delete_window_atom) {
+                atomic_store_explicit(&running_flag, false,
+                                      memory_order_relaxed);
             }
         }
     }
 
-    atomic_store_explicit(&running, false, memory_order_relaxed);
-    pthread_join(capture_thread, nullptr);
+    /* Wait for capture thread to finish */
+    pthread_join(capture_thread_handle, NULL);
 
-    V4l2Device_stop_video_stream(device.file_descriptor);
-    V4l2Device_unmap_buffers(&device);
-    V4l2Device_close_device(device.file_descriptor);
-
-    XDestroyImage(x_image);
-    free(rgb_frame_buffer);
+    /* Cleanup resources */
+    XDestroyImage(x_image_for_display);
     free(gray_frame_buffer);
-    XCloseDisplay(display);
+    free(rgb_frame_buffer);
+    free(rgb_flipped_buffer);
+    V4l2Device_stop_video_stream(video_device.file_descriptor);
+    V4l2Device_unmap_buffers(&video_device);
+    V4l2Device_close_device(video_device.file_descriptor);
+    XCloseDisplay(x_display);
 
     return 0;
 }

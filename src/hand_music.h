@@ -19,14 +19,7 @@ struct FrameDimensions {
 
 // --- Constants ---
 #define K_MAX_RGB_VALUE 255
-#define K_U_OFFSET 128
 #define K_RGB_COMPONENTS 3
-
-#define RGB_MULTIPLIER 1000
-#define RED_V_MULTIPLIER 1402
-#define GREEN_U_MULTIPLIER 344
-#define GREEN_V_MULTIPLIER 714
-#define BLUE_U_MULTIPLIER 1772
 
 // when an ioctl call is interrupted by a signal (EINTR), it should be retried.
 // this function wraps the ioctl call in a loop to handle such interruptions.

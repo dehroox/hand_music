@@ -18,7 +18,7 @@ ifeq ($(PROFILE),debug)
     LDFLAGS := $(COMMON_LD_FLAGS) -fsanitize=address,undefined,leak \
                -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 else ifeq ($(PROFILE),release)
-    CFLAGS := $(COMMON_FLAGS) -O3 -flto -DNDEBUG -march=native -mtune=native -ffastmath -mavx2
+    CFLAGS := $(COMMON_FLAGS) -O3 -flto -DNDEBUG -march=native -mtune=native -ffast-math -mavx2
 
     LDFLAGS := $(COMMON_LD_FLAGS) -flto -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 else
