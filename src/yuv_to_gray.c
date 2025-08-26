@@ -3,6 +3,7 @@
 
 #include "include/common_types.h"
 #include "include/constants.h"
+#include "include/image_conversions.h"
 
 void convert_yuv_to_gray(const unsigned char *__restrict yuv_frame_pointer,
                          unsigned char *__restrict gray_frame_pointer,

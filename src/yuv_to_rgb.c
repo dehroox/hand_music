@@ -6,6 +6,7 @@
 
 #include "include/common_types.h"
 #include "include/constants.h"
+#include "include/image_conversions.h"
 
 struct RGBLane {
     __m128i r_lane;
