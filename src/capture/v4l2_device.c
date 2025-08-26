@@ -9,8 +9,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "include/common_types.h"
-#include "include/ioctl_utils.h"
+#include "../common/common_types.h"
+#include "../common/ioctl_utils.h"
 #include "include/v4l2_device_api.h"
 #include "linux/videodev2.h"
 

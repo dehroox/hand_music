@@ -7,7 +7,7 @@ BUILD_DIR := build/$(PROFILE)
 
 CC := ccache gcc
 
-COMMON_FLAGS := -std=c23 -Wall -Wextra -pedantic -pedantic-errors -Wcast-qual -Wconversion -Wdisabled-optimization -Wfloat-equal -Wformat=2 -Winit-self -Wmissing-include-dirs -Wpacked -Wparentheses -Wredundant-decls -Wshadow -Wsign-conversion -Wstrict-aliasing=2 -Wstrict-overflow=5 -Wswitch-default -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")') -I$(CURDIR)/$(SRCDIR)
+COMMON_FLAGS := -std=c23 -Wall -Wextra -pedantic -pedantic-errors -Wcast-qual -Wconversion -Wdisabled-optimization -Wfloat-equal -Wformat=2 -Winit-self -Wmissing-include-dirs -Wpacked -Wparentheses -Wredundant-decls -Wshadow -Wsign-conversion -Wstrict-aliasing=2 -Wstrict-overflow=5 -Wswitch-default -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")') -I$(CURDIR)/$(SRCDIR) -I$(CURDIR)/src/common -I$(CURDIR)/src/frontend/include -I$(CURDIR)/src/capture/include
 
 COMMON_LD_FLAGS := $(shell pkg-config --libs x11)
 
@@ -30,8 +30,8 @@ OBJDIR := $(BUILD_DIR)/obj
 BINDIR := $(BUILD_DIR)
 TARGET := $(BINDIR)/hand_music
 
-SOURCES := $(wildcard $(SRCDIR)/*.c)
-OBJECTS := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+SOURCES := $(shell find $(SRCDIR) -name "*.c")
+OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
 DEPS := $(OBJECTS:.o=.d)
 
 all: $(TARGET)
@@ -42,8 +42,9 @@ $(TARGET): $(OBJECTS) | $(BINDIR)
 	@echo "  LINK    $@"
 	$(Q)$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lpthread
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@echo "  CC      $<"
+	$(Q)mkdir -p $(dir $@)
 	$(Q)$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(OBJDIR) $(BINDIR):
@@ -51,7 +52,7 @@ $(OBJDIR) $(BINDIR):
 
 clean:
 	@echo "  CLEAN   all"
-	$(Q)rm -rf $(BUILD_DIR) compile_commands.json
+	$(Q)rm -rf build compile_commands.json
 
 run: $(TARGET)
 	@echo "  RUN     $(TARGET)"

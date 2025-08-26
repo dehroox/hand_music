@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#include "common_types.h"
+#include "../../common/common_types.h"
 
 void FrameProcessing_flip_rgb_horizontal(
     const unsigned char *source_rgb_buffer,

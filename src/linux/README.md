@@ -1,1 +1,0 @@
-had to use a custom header because of some weird bug where using the standard videodev2.h caused the program to not compile with c23, so had to edit :)

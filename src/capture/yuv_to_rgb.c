@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "include/common_types.h"
-#include "include/constants.h"
+#include "../common/common_types.h"
+#include "../common/constants.h"
 #include "include/image_conversions.h"
 
 struct RGBLane {

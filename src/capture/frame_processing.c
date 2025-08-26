@@ -4,7 +4,7 @@
 
 #include <time.h>
 
-#include "include/constants.h"
+#include "../common/constants.h"
 
 void FrameProcessing_flip_rgb_horizontal(
     const unsigned char *source_rgb_buffer,

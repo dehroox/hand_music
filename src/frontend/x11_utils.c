@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "include/constants.h"
+#include "../common/constants.h"
 
 bool X11Utils_init(X11Context *context,
                    const struct FrameDimensions *frame_dimensions,
@@ -34,7 +34,7 @@ bool X11Utils_init(X11Context *context,
 
     context->x_image = XCreateImage(
         context->display, DefaultVisual(context->display, context->screen),
-        DefaultDepth(context->display, context->screen), ZPixmap, 0,
+        (unsigned int)DefaultDepth(context->display, context->screen), ZPixmap, 0,
         (char *)rgb_frame_buffer, frame_dimensions->width,
         frame_dimensions->height, BITMAP_PAD, 0);
     if (context->x_image == NULL) {

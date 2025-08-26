@@ -2,10 +2,12 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+
+#include "../common/ioctl_utils.h"
 
 #include "include/frame_processing.h"
 #include "include/image_conversions.h"
-#include "include/ioctl_utils.h"
 #include "include/v4l2_device_api.h"
 #include "linux/videodev2.h"
 
@@ -58,7 +60,7 @@ void *CaptureThread_function(void *arguments) {
             thread_arguments->rgb_flipped_buffer,
             thread_arguments->frame_dimensions);
 
-        X11Utils_update_window(thread_arguments->x11_context,
+        thread_arguments->display_update_callback(thread_arguments->display_update_context,
                                thread_arguments->rgb_flipped_buffer);
 
         continually_retry_ioctl(thread_arguments->device->file_descriptor,

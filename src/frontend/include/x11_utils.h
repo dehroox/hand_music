@@ -6,7 +6,7 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 
-#include "common_types.h"
+#include "../../common/common_types.h"
 
 typedef struct {
     Display *display;

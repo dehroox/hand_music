@@ -39,7 +39,6 @@
 #define GREEN_FROM_V 183
 #define BLUE_FROM_U 454
 
-// AVX Masks
 #define SHUFFLE_YUV_MASK \
     _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15)
 #define DUPLICATE_U_MASK                                                      \

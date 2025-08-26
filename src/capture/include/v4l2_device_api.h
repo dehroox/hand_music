@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 
-#include "common_types.h"
-#include "constants.h"
+#include "../../common/common_types.h"
+#include "../../common/constants.h"
 
 struct V4l2Device_Device {
     int file_descriptor;

@@ -1,8 +1,8 @@
 #include <assert.h>
 #include <immintrin.h>
 
-#include "include/common_types.h"
-#include "include/constants.h"
+#include "../common/common_types.h"
+#include "../common/constants.h"
 #include "include/image_conversions.h"
 
 void convert_yuv_to_gray(const unsigned char *__restrict yuv_frame_pointer,
