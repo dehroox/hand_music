@@ -1,4 +1,6 @@
-#include <time.h>  // NOLINT
+// clang-format off
+#include <time.h>
+// clang-format on
 #include <fcntl.h>
 #include <linux/videodev2.h>
 #include <stdbool.h>
