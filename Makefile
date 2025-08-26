@@ -1,4 +1,3 @@
-
 Q := @
 MAKEFLAGS += --no-print-directory
 .DELETE_ON_ERROR:
@@ -8,26 +7,9 @@ BUILD_DIR := build/$(PROFILE)
 
 CXX := ccache g++
 
-COMMON_FLAGS := \
-    -std=c++23 \
-    -Wall -Wextra \
-    -pedantic -pedantic-errors \
-    -Wcast-align -Wcast-qual -Wconversion \
-    -Wdisabled-optimization -Wfloat-equal \
-    -Wformat=2 -Winit-self -Wmissing-include-dirs \
-    -Wnon-virtual-dtor -Wold-style-cast \
-    -Woverloaded-virtual -Wpacked -Wparentheses \
-    -Wredundant-decls -Wshadow -Wsign-conversion \
-    -Wsign-promo -Wstrict-aliasing=2 -Wstrict-overflow=5 \
-    -Wswitch-default -Wundef -Wunreachable-code \
-    -Wunused -Wvariadic-macros -Wvla \
-    -Wzero-as-null-pointer-constant \
-    -Wnull-dereference -Wduplicated-cond -Wlogical-op \
-    -Wuseless-cast -Wdouble-promotion \
-    -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 \
-    $(shell pkg-config --cflags Qt6Widgets | awk 'gsub("-I", "-isystem ")')
+COMMON_FLAGS := -std=c++23 -Wall -Wextra -pedantic -pedantic-errors -Wcast-align -Wcast-qual -Wconversion -Wdisabled-optimization -Wfloat-equal -Wformat=2 -Winit-self -Wmissing-include-dirs -Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual -Wpacked -Wparentheses -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-aliasing=2 -Wstrict-overflow=5 -Wswitch-default -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -Wzero-as-null-pointer-constant -Wnull-dereference -Wduplicated-cond -Wlogical-op -Wuseless-cast -Wdouble-promotion -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")')
 
-COMMON_LD_FLAGS := $(shell pkg-config --libs Qt6Widgets)
+COMMON_LD_FLAGS := $(shell pkg-config --libs x11)
 
 ifeq ($(PROFILE),debug)
     CXXFLAGS := $(COMMON_FLAGS) -O0 -g3 -DDEBUG \
@@ -75,7 +57,7 @@ run: $(TARGET)
 ifeq ($(PROFILE),debug)
 	$(Q)ASAN_OPTIONS=detect_stack_use_after_return=true:check_initialization_order=true:strict_init_order=true:abort_on_error=1:detect_leaks=1 \
 	   UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
-	   $<
+	   $< 
 else
 	$(Q)$<
 endif

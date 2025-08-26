@@ -20,7 +20,7 @@ void convert_yuv_to_rgb(const unsigned char* __restrict yuv_frame_pointer,
     constexpr int BYTES_PER_PIXEL_YUYV = 2;
     constexpr int YUYV_TOTAL_BYTES_PER_BLOCK =
         PIXELS_PER_BLOCK_FOR_SIMD_PROCESSING * BYTES_PER_PIXEL_YUYV;
-    constexpr int RGB_CHANNELS_PER_PIXEL = 3;
+    constexpr int RGB_CHANNELS_PER_PIXEL = 4;
 
     constexpr int16_t U_CHANNEL_OFFSET = 128;
     constexpr int16_t V_CHANNEL_OFFSET = 128;
@@ -31,6 +31,8 @@ void convert_yuv_to_rgb(const unsigned char* __restrict yuv_frame_pointer,
     constexpr int16_t GREEN_MULTIPLIER_FROM_U_CHANNEL = 88;
     constexpr int16_t GREEN_MULTIPLIER_FROM_V_CHANNEL = 183;
     constexpr int16_t BLUE_MULTIPLIER_FROM_U_CHANNEL = 454;
+
+    constexpr int ALPHA_VALUE = 0xFF;
 
     const auto frame_width_in_pixels =
         static_cast<std::size_t>(frame_dimensions.width);
@@ -150,9 +152,10 @@ void convert_yuv_to_rgb(const unsigned char* __restrict yuv_frame_pointer,
                 rgb_row_pointer +
                 (column_index_in_pixels * RGB_CHANNELS_PER_PIXEL);
             for (std::size_t i = 0; i < pixels_remaining_in_row; i++) {
-                output_pixel_pointer_base[(3 * i) + 0] = r_tmp.at(i);
-                output_pixel_pointer_base[(3 * i) + 1] = g_tmp.at(i);
-                output_pixel_pointer_base[(3 * i) + 2] = b_tmp.at(i);
+                output_pixel_pointer_base[(4 * i) + 0] = b_tmp.at(i);  // blue
+                output_pixel_pointer_base[(4 * i) + 1] = g_tmp.at(i);  // green
+                output_pixel_pointer_base[(4 * i) + 2] = r_tmp.at(i);  // red
+                output_pixel_pointer_base[(4 * i) + 3] = ALPHA_VALUE;
             }
 
             column_index_in_pixels += PIXELS_PER_BLOCK_FOR_SIMD_PROCESSING;
