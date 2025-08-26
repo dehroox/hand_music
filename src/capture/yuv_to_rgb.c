@@ -1,5 +1,6 @@
 // fucking black magic mathematics
 
+#include <assert.h>
 #include <immintrin.h>
 #include <stdint.h>
 #include <string.h>
@@ -74,6 +75,8 @@ void convert_yuv_to_rgb(const unsigned char *__restrict yuv_frame_pointer,
     size_t frame_width_in_pixels = (size_t)frame_dimensions.width;
     size_t frame_height_in_pixels = (size_t)frame_dimensions.height;
     size_t frame_stride_in_bytes = (size_t)frame_dimensions.stride_bytes;
+
+    assert(frame_width_in_pixels % (PIXELS_PER_SIMD_BLOCK) == 0);
 
     for (size_t row_index = 0; row_index < frame_height_in_pixels;
          ++row_index) {
