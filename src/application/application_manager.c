@@ -18,18 +18,18 @@ static void application_update_display_callback(void *context_ptr,
 
 bool Application_init(ApplicationContext *context,
                       const char *video_device_path) {
-    context->video_device =
-        (struct V4l2Device_Device *)calloc(1, sizeof(struct V4l2Device_Device));
+    bool success = false;
+
+    context->video_device = calloc(1, sizeof(struct V4l2Device_Device));
     if (!context->video_device) {
         fputs("Failed to allocate V4L2 device context\n", stderr);
-        return false;
+        goto cleanup;
     }
 
     context->video_device->file_descriptor = V4l2Device_open(video_device_path);
     if (context->video_device->file_descriptor == -1) {
         fputs("Failed to open video device\n", stderr);
-        free(context->video_device);
-        return false;
+        goto cleanup;
     }
 
     context->frame_dimensions = V4l2Device_select_highest_resolution(
@@ -37,9 +37,7 @@ bool Application_init(ApplicationContext *context,
     if (context->frame_dimensions.width == 0 ||
         context->frame_dimensions.height == 0) {
         fputs("Failed to select highest resolution.\n", stderr);
-        V4l2Device_close_device(context->video_device->file_descriptor);
-        free(context->video_device);
-        return false;
+        goto cleanup;
     }
 
     if (!V4l2Device_configure_video_format(
@@ -49,50 +47,50 @@ bool Application_init(ApplicationContext *context,
                                                 V4L2_MAX_BUFFERS) ||
         !V4l2Device_start_video_stream(
             context->video_device->file_descriptor)) {
-        fputs("Failed to configure video stream or buffers.", stderr);
-        Application_cleanup(context);
-        return false;
+        fputs("Failed to configure video stream or buffers.\n", stderr);
+        goto cleanup;
     }
 
     size_t rgb_buffer_size = (size_t)context->frame_dimensions.width *
                              context->frame_dimensions.height * RGB_CHANNELS;
-    context->rgb_frame_buffer = (unsigned char *)calloc(1, rgb_buffer_size);
-    context->rgb_flipped_buffer = (unsigned char *)calloc(1, rgb_buffer_size);
+    context->rgb_frame_buffer = calloc(1, rgb_buffer_size);
+    context->rgb_flipped_buffer = calloc(1, rgb_buffer_size);
     context->gray_frame_buffer =
-        (unsigned char *)calloc(1, (size_t)context->frame_dimensions.width *
-                                       context->frame_dimensions.height);
+        calloc(1, (size_t)context->frame_dimensions.width *
+                      context->frame_dimensions.height);
 
     if (!context->rgb_frame_buffer || !context->rgb_flipped_buffer ||
         !context->gray_frame_buffer) {
         fputs("Failed to allocate frame buffers.\n", stderr);
-        Application_cleanup(context);
-        return false;
+        goto cleanup;
     }
 
-    context->frontend_context =
-        (FrontendContext *)calloc(1, sizeof(FrontendContext));
+    context->frontend_context = calloc(1, sizeof(FrontendContext));
     if (!context->frontend_context) {
         fputs("Failed to allocate frontend context\n", stderr);
-        Application_cleanup(context);
-        return false;
+        goto cleanup;
     }
 
     if (!Frontend_init(context->frontend_context, &context->frame_dimensions,
                        context->rgb_flipped_buffer)) {
         fputs("Failed to initialize frontend.\n", stderr);
-        Application_cleanup(context);
-        return false;
+        goto cleanup;
     }
 
-    context->running_flag = (atomic_bool *)calloc(1, sizeof(atomic_bool));
+    context->running_flag = calloc(1, sizeof(atomic_bool));
     if (!context->running_flag) {
         fputs("Failed to allocate running flag\n", stderr);
-        Application_cleanup(context);
-        return false;
+        goto cleanup;
     }
     atomic_init(context->running_flag, true);
 
-    return true;
+    success = true;
+
+cleanup:
+    if (!success) {
+        Application_cleanup(context);
+    }
+    return success;
 }
 
 void Application_run(ApplicationContext *context) {

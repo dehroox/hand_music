@@ -60,8 +60,9 @@ void *CaptureThread_function(void *arguments) {
             thread_arguments->rgb_flipped_buffer,
             thread_arguments->frame_dimensions);
 
-        thread_arguments->display_update_callback(thread_arguments->display_update_context,
-                               thread_arguments->rgb_flipped_buffer);
+        thread_arguments->display_update_callback(
+            thread_arguments->display_update_context,
+            thread_arguments->rgb_flipped_buffer);
 
         continually_retry_ioctl(thread_arguments->device->file_descriptor,
                                 VIDIOC_QBUF, &capture_buffer);

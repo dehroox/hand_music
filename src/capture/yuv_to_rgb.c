@@ -1,4 +1,4 @@
-// fucking black magic mathematics
+// what the fuck, fuck fuck??
 
 #include <assert.h>
 #include <immintrin.h>
@@ -25,7 +25,7 @@ static inline void convert_yuv_lane_to_rgb(const __m128i lane_bytes,
     __m128i green_multiplier_u_vector = _mm_set1_epi16(GREEN_FROM_U);
     __m128i green_multiplier_v_vector = _mm_set1_epi16(GREEN_FROM_V);
     __m128i blue_multiplier_vector = _mm_set1_epi16(BLUE_FROM_U);
-    __m128i max_rgb_vector = _mm_set1_epi16(K_MAX_RGB_VALUE);
+    __m128i max_rgb_vector = _mm_set1_epi16(MAX_RGB_VALUE);
 
     __m128i shuffled_bytes = _mm_shuffle_epi8(lane_bytes, SHUFFLE_YUV_MASK);
     __m128i y_bytes_16 = _mm_cvtepu8_epi16(shuffled_bytes);
@@ -88,11 +88,6 @@ void convert_yuv_to_rgb(const unsigned char *__restrict yuv_frame_pointer,
 
         for (size_t column_index = 0; column_index < frame_width_in_pixels;
              column_index += PIXELS_PER_SIMD_BLOCK) {
-            size_t remaining_pixels = frame_width_in_pixels - column_index;
-            if (remaining_pixels > PIXELS_PER_SIMD_BLOCK) {
-                remaining_pixels = PIXELS_PER_SIMD_BLOCK;
-            }
-
             __m128i lane0 = _mm_loadu_si128(
                 (const __m128i *)(yuyv_row_ptr +
                                   (column_index * BYTES_PER_YUYV_PIXEL)));
@@ -106,33 +101,32 @@ void convert_yuv_to_rgb(const unsigned char *__restrict yuv_frame_pointer,
             convert_yuv_lane_to_rgb(lane0, &lane0_rgb);
             convert_yuv_lane_to_rgb(lane1, &lane1_rgb);
 
-            uint8_t r_values[PIXELS_PER_SIMD_BLOCK];
-            uint8_t g_values[PIXELS_PER_SIMD_BLOCK];
-            uint8_t b_values[PIXELS_PER_SIMD_BLOCK];
+            // NOLINTBEGIN
+            __m128i r = _mm_unpacklo_epi64(lane0_rgb.r_lane, lane1_rgb.r_lane);
+            __m128i g = _mm_unpacklo_epi64(lane0_rgb.g_lane, lane1_rgb.g_lane);
+            __m128i b = _mm_unpacklo_epi64(lane0_rgb.b_lane, lane1_rgb.b_lane);
+            __m128i a = _mm_set1_epi8(ALPHA_BYTE_VALUE);
+            // NOLINTEND
 
-            _mm_store_si128(
-                (__m128i *)r_values,
-                _mm_unpacklo_epi64(lane0_rgb.r_lane, lane1_rgb.r_lane));
-            _mm_store_si128(
-                (__m128i *)g_values,
-                _mm_unpacklo_epi64(lane0_rgb.g_lane, lane1_rgb.g_lane));
-            _mm_store_si128(
-                (__m128i *)b_values,
-                _mm_unpacklo_epi64(lane0_rgb.b_lane, lane1_rgb.b_lane));
+            __m128i bg_lo = _mm_unpacklo_epi8(b, g);
+            __m128i bg_hi = _mm_unpackhi_epi8(b, g);
+            __m128i ra_lo = _mm_unpacklo_epi8(r, a);
+            __m128i ra_hi = _mm_unpackhi_epi8(r, a);
+
+            __m128i bgra0 = _mm_unpacklo_epi16(bg_lo, ra_lo);
+            __m128i bgra1 = _mm_unpackhi_epi16(bg_lo, ra_lo);
+            __m128i bgra2 = _mm_unpacklo_epi16(bg_hi, ra_hi);
+            __m128i bgra3 = _mm_unpackhi_epi16(bg_hi, ra_hi);
 
             uint8_t *output_pixel_ptr =
                 rgb_row_ptr + (column_index * RGB_CHANNELS);
-            for (size_t pixel_offset = 0; pixel_offset < remaining_pixels;
-                 ++pixel_offset) {
-                output_pixel_ptr[(pixel_offset * RGB_CHANNELS) + 0] =
-                    b_values[pixel_offset];
-                output_pixel_ptr[(pixel_offset * RGB_CHANNELS) + 1] =
-                    g_values[pixel_offset];
-                output_pixel_ptr[(pixel_offset * RGB_CHANNELS) + 2] =
-                    r_values[pixel_offset];
-                output_pixel_ptr[(pixel_offset * RGB_CHANNELS) + 3] =
-                    ALPHA_BYTE_VALUE;
-            }
+
+            // NOLINTBEGIN
+            _mm_storeu_si128((__m128i *)(output_pixel_ptr + 0), bgra0);
+            _mm_storeu_si128((__m128i *)(output_pixel_ptr + 16), bgra1);
+            _mm_storeu_si128((__m128i *)(output_pixel_ptr + 32), bgra2);
+            _mm_storeu_si128((__m128i *)(output_pixel_ptr + 48), bgra3);
+            // NOLINTEND
         }
     }
 }

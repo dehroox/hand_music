@@ -1,5 +1,6 @@
+#include <time.h>  // NOLINT
 #include <fcntl.h>
-#include <pthread.h>
+#include <linux/videodev2.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -12,59 +13,6 @@
 #include "../common/common_types.h"
 #include "../common/ioctl_utils.h"
 #include "include/v4l2_device_api.h"
-#include "linux/videodev2.h"
-
-typedef struct {
-    int file_descriptor;
-    struct V4l2Device_Device *device;
-    unsigned int buffer_index;
-    bool *result_flag;
-} MapBufferThreadArguments;
-
-static void *map_single_buffer_thread(void *arguments) {
-    MapBufferThreadArguments *thread_arguments =
-        (MapBufferThreadArguments *)arguments;
-
-    int video_file_descriptor = thread_arguments->file_descriptor;
-    struct V4l2Device_Device *device_reference = thread_arguments->device;
-    unsigned int buffer_index = thread_arguments->buffer_index;
-    bool *result_flag_pointer = thread_arguments->result_flag;
-
-    struct v4l2_buffer buffer_descriptor;
-    memset(&buffer_descriptor, 0, sizeof(buffer_descriptor));
-
-    buffer_descriptor.type = VIDEO_CAPTURE_TYPE;
-    buffer_descriptor.memory = V4L2_MEMORY_MMAP;
-    buffer_descriptor.index = buffer_index;
-
-    if (continually_retry_ioctl(video_file_descriptor, VIDIOC_QUERYBUF,
-                                &buffer_descriptor) == -1) {
-        *result_flag_pointer = false;
-        return NULL;
-    }
-
-    device_reference->mapped_buffers[buffer_index].start_address =
-        mmap(NULL, buffer_descriptor.length, PROT_READ | PROT_WRITE, MAP_SHARED,
-             video_file_descriptor, buffer_descriptor.m.offset);
-
-    if (device_reference->mapped_buffers[buffer_index].start_address ==
-        MAP_FAILED) {
-        *result_flag_pointer = false;
-        return NULL;
-    }
-
-    device_reference->mapped_buffers[buffer_index].length_bytes =
-        buffer_descriptor.length;
-
-    if (continually_retry_ioctl(video_file_descriptor, VIDIOC_QBUF,
-                                &buffer_descriptor) == -1) {
-        *result_flag_pointer = false;
-    } else {
-        *result_flag_pointer = true;
-    }
-
-    return NULL;
-}
 
 int V4l2Device_open(const char *video_device_path) {
     int video_file_descriptor = open(video_device_path, O_RDWR);
@@ -95,6 +43,7 @@ struct FrameDimensions V4l2Device_select_highest_resolution(
     frame_size_enumerator.index = 0;
     frame_size_enumerator.pixel_format = PIXEL_FORMAT;
 
+    current_max_area = 0;
     while (ioctl(video_file_descriptor, VIDIOC_ENUM_FRAMESIZES,
                  &frame_size_enumerator) != -1) {
         if (frame_size_enumerator.type == V4L2_FRMSIZE_TYPE_STEPWISE) {
@@ -108,10 +57,9 @@ struct FrameDimensions V4l2Device_select_highest_resolution(
         if (frame_size_enumerator.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
             candidate_area = (uint32_t)frame_size_enumerator.discrete.width *
                              (uint32_t)frame_size_enumerator.discrete.height;
-            current_max_area = (uint32_t)selected_frame_dimensions.width *
-                               (uint32_t)selected_frame_dimensions.height;
 
             if (candidate_area > current_max_area) {
+                current_max_area = candidate_area;
                 selected_frame_dimensions.width =
                     frame_size_enumerator.discrete.width;
                 selected_frame_dimensions.height =
@@ -158,11 +106,6 @@ bool V4l2Device_setup_memory_mapped_buffers(
     unsigned int requested_buffer_count) {
     int video_file_descriptor = device_reference->file_descriptor;
     struct v4l2_requestbuffers buffer_request;
-    pthread_t *thread_handles;
-    MapBufferThreadArguments *thread_arguments_array;
-    bool *thread_results;
-    bool all_buffers_mapped_successfully;
-    unsigned int buffer_index;
 
     memset(&buffer_request, 0, sizeof(buffer_request));
     buffer_request.count = requested_buffer_count;
@@ -180,67 +123,48 @@ bool V4l2Device_setup_memory_mapped_buffers(
 
     device_reference->buffer_count = buffer_request.count;
 
-    thread_handles = malloc(device_reference->buffer_count * sizeof(*thread_handles));
-    if (!thread_handles) {
-        return false;
-    }
+    for (unsigned int i = 0; i < device_reference->buffer_count; ++i) {
+        struct v4l2_buffer buffer_descriptor;
+        memset(&buffer_descriptor, 0, sizeof(buffer_descriptor));
 
-    thread_arguments_array = malloc(device_reference->buffer_count * sizeof(*thread_arguments_array));
-    if (!thread_arguments_array) {
-        free(thread_handles);
-        return false;
-    }
+        buffer_descriptor.type = VIDEO_CAPTURE_TYPE;
+        buffer_descriptor.memory = V4L2_MEMORY_MMAP;
+        buffer_descriptor.index = i;
 
-    thread_results = malloc(device_reference->buffer_count * sizeof(*thread_results));
-    if (!thread_results) {
-        free(thread_arguments_array);
-        free(thread_handles);
-        return false;
-    }
+        if (continually_retry_ioctl(video_file_descriptor, VIDIOC_QUERYBUF,
+                                    &buffer_descriptor) == -1) {
+            V4l2Device_unmap_buffers(device_reference);
+            return false;
+        }
 
-    for (buffer_index = 0; buffer_index < device_reference->buffer_count;
-         ++buffer_index) {
-        thread_arguments_array[buffer_index].file_descriptor =
-            video_file_descriptor;
-        thread_arguments_array[buffer_index].device = device_reference;
-        thread_arguments_array[buffer_index].buffer_index = buffer_index;
-        thread_arguments_array[buffer_index].result_flag =
-            &thread_results[buffer_index];
+        device_reference->mapped_buffers[i].start_address =
+            mmap(NULL, buffer_descriptor.length, PROT_READ | PROT_WRITE,
+                 MAP_SHARED, video_file_descriptor, buffer_descriptor.m.offset);
 
-        if (pthread_create(&thread_handles[buffer_index], NULL,
-                           map_single_buffer_thread,
-                           &thread_arguments_array[buffer_index]) != 0) {
-            thread_results[buffer_index] = false;
+        if (device_reference->mapped_buffers[i].start_address == MAP_FAILED) {
+            V4l2Device_unmap_buffers(device_reference);
+            return false;
+        }
+
+        device_reference->mapped_buffers[i].length_bytes =
+            buffer_descriptor.length;
+
+        if (continually_retry_ioctl(video_file_descriptor, VIDIOC_QBUF,
+                                    &buffer_descriptor) == -1) {
+            V4l2Device_unmap_buffers(device_reference);
+            return false;
         }
     }
 
-    all_buffers_mapped_successfully = true;
-    for (buffer_index = 0; buffer_index < device_reference->buffer_count;
-         ++buffer_index) {
-        pthread_join(thread_handles[buffer_index], NULL);
-
-        if (!thread_results[buffer_index]) {
-            all_buffers_mapped_successfully = false;
-        }
-    }
-
-    free(thread_handles);
-    free(thread_arguments_array);
-    free(thread_results);
-
-    return all_buffers_mapped_successfully;
+    return true;
 }
 
 void V4l2Device_unmap_buffers(struct V4l2Device_Device *device_reference) {
-    struct MemoryMappedBuffer *mapped_buffers_reference;
-    unsigned int buffer_index;
-
-    mapped_buffers_reference = device_reference->mapped_buffers;
-
-    for (buffer_index = 0; buffer_index < device_reference->buffer_count;
-         ++buffer_index) {
-        munmap(mapped_buffers_reference[buffer_index].start_address,
-               mapped_buffers_reference[buffer_index].length_bytes);
+    for (unsigned int i = 0; i < device_reference->buffer_count; ++i) {
+        if (device_reference->mapped_buffers[i].start_address) {
+            munmap(device_reference->mapped_buffers[i].start_address,
+                   device_reference->mapped_buffers[i].length_bytes);
+        }
     }
 }
 
