@@ -7,7 +7,7 @@ BUILD_DIR := build/$(PROFILE)
 
 CC := ccache gcc
 
-COMMON_FLAGS := -std=c23 -Wall -Wextra -pedantic -pedantic-errors -Wcast-qual -Wconversion -Wdisabled-optimization -Wfloat-equal -Wformat=2 -Winit-self -Wmissing-include-dirs -Wpacked -Wparentheses -Wredundant-decls -Wshadow -Wsign-conversion -Wstrict-aliasing=2 -Wstrict-overflow=5 -Wswitch-default -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")')
+COMMON_FLAGS := -std=c23 -Wall -Wextra -pedantic -pedantic-errors -Wcast-qual -Wconversion -Wdisabled-optimization -Wfloat-equal -Wformat=2 -Winit-self -Wmissing-include-dirs -Wpacked -Wparentheses -Wredundant-decls -Wshadow -Wsign-conversion -Wstrict-aliasing=2 -Wstrict-overflow=5 -Wswitch-default -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")') -I$(CURDIR)/$(SRCDIR)
 
 COMMON_LD_FLAGS := $(shell pkg-config --libs x11)
 

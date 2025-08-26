@@ -9,12 +9,10 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "hand_music.h"
+#include "include/common_types.h"
+#include "include/ioctl_utils.h"
+#include "include/v4l2_device_api.h"
 #include "linux/videodev2.h"
-
-#define MINIMUM_BUFFER_COUNT 2
-#define PIXEL_FORMAT V4L2_PIX_FMT_YUYV
-#define VIDEO_CAPTURE_TYPE V4L2_BUF_TYPE_VIDEO_CAPTURE
 
 typedef struct {
     int file_descriptor;

@@ -1,11 +1,8 @@
 #include <assert.h>
 #include <immintrin.h>
 
-#include "hand_music.h"
-
-#define PIXELS_PER_AVX2_BLOCK 16U
-#define BYTES_PER_YUYV_PIXEL 2U
-#define SHUFFLE_INVALID_BYTE 0x80
+#include "include/common_types.h"
+#include "include/constants.h"
 
 void convert_yuv_to_gray(const unsigned char *__restrict yuv_frame_pointer,
                          unsigned char *__restrict gray_frame_pointer,
