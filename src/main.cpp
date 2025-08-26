@@ -6,6 +6,8 @@
 #include <QMetaObject>
 #include <QPixmap>
 #include <atomic>
+#include <chrono>
+#include <iostream>
 #include <thread>
 #include <vector>
 
@@ -46,6 +48,11 @@ auto main(int argc, char** argv) -> int {
     std::vector<unsigned char> rgb_frame_buffer(
         static_cast<size_t>(frame_bytes), 0);
 
+    const int gray_frame_bytes = static_cast<int>(frame_dimensions.width) *
+                                 static_cast<int>(frame_dimensions.height);
+    std::vector<unsigned char> gray_frame_buffer(
+        static_cast<size_t>(gray_frame_bytes), 0);
+
     QImage frame_image(
         rgb_frame_buffer.data(), static_cast<int>(frame_dimensions.width),
         static_cast<int>(frame_dimensions.height), QImage::Format_RGB888);
@@ -57,7 +64,8 @@ auto main(int argc, char** argv) -> int {
 
     std::atomic<bool> running{true};
     std::thread capture_thread([&device, &display_label, &rgb_frame_buffer,
-                                &frame_dimensions, &running]() {
+                                &gray_frame_buffer, &frame_dimensions,
+                                &running]() {
         v4l2_buffer buffer{};
         buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         buffer.memory = V4L2_MEMORY_MMAP;
@@ -65,16 +73,38 @@ auto main(int argc, char** argv) -> int {
         const int width_int = static_cast<int>(frame_dimensions.width);
         const int height_int = static_cast<int>(frame_dimensions.height);
 
+        long long total_duration_rgb = 0;
+        long long total_duration_gray = 0;
+        int frame_count = 0;
+
         while (running.load(std::memory_order_relaxed)) {
             if (Utils::continually_retry_ioctl(device.file_descriptor,
                                                VIDIOC_DQBUF, &buffer) == -1) {
                 continue;
             }
 
-            convert_yuv_to_rgb(
-                static_cast<unsigned char*>(
-                    device.mapped_buffers.at(buffer.index).start_address),
-                rgb_frame_buffer.data(), frame_dimensions);
+            auto* yuv_data = static_cast<unsigned char*>(
+                device.mapped_buffers.at(buffer.index).start_address);
+
+            auto start_rgb = std::chrono::high_resolution_clock::now();
+            convert_yuv_to_rgb(yuv_data, rgb_frame_buffer.data(),
+                               frame_dimensions);
+            auto end_rgb = std::chrono::high_resolution_clock::now();
+            total_duration_rgb +=
+                std::chrono::duration_cast<std::chrono::microseconds>(end_rgb -
+                                                                      start_rgb)
+                    .count();
+
+            auto start_gray = std::chrono::high_resolution_clock::now();
+            convert_yuv_to_gray(yuv_data, gray_frame_buffer.data(),
+                                frame_dimensions);
+            auto end_gray = std::chrono::high_resolution_clock::now();
+            total_duration_gray +=
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                    end_gray - start_gray)
+                    .count();
+
+            frame_count++;
 
             QMetaObject::invokeMethod(
                 &display_label,
@@ -89,6 +119,15 @@ auto main(int argc, char** argv) -> int {
 
             Utils::continually_retry_ioctl(device.file_descriptor, VIDIOC_QBUF,
                                            &buffer);
+        }
+
+        if (frame_count > 0) {
+            std::cout << "Average YUV to RGB conversion time: "
+                      << total_duration_rgb / frame_count << " microseconds."
+                      << '\n';
+            std::cout << "Average YUV to Gray conversion time: "
+                      << total_duration_gray / frame_count << " microseconds."
+                      << '\n';
         }
     });
 
