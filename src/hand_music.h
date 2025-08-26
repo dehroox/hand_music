@@ -62,17 +62,6 @@ bool V4l2Device_start_video_stream(int video_file_descriptor);
 
 void V4l2Device_stop_video_stream(int video_file_descriptor);
 
-// clamps a value to the valid 8-bit RGB range (0-255).
-static inline unsigned char clamp_rgb_value(int value) {
-    int clamped_value = value;
-    if (clamped_value > K_MAX_RGB_VALUE) {
-        clamped_value = K_MAX_RGB_VALUE;
-    } else if (clamped_value < 0) {
-        clamped_value = 0;
-    }
-    return (unsigned char)clamped_value;
-}
-
 void convert_yuv_to_rgb(const unsigned char *__restrict yuv_frame_pointer,
                         unsigned char *__restrict rgb_frame_pointer,
                         struct FrameDimensions frame_dimensions);
