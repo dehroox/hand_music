@@ -71,7 +71,7 @@ auto main(int argc, char** argv) -> int {
                 continue;
             }
 
-            convert_yuyv_to_rgb(
+            convert_yuv_to_rgb(
                 static_cast<unsigned char*>(
                     device.mapped_buffers.at(buffer.index).start_address),
                 rgb_frame_buffer.data(), frame_dimensions);

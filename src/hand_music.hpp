@@ -91,8 +91,12 @@ static inline auto clamp_rgb_value(int value) -> unsigned char {
     return unsigned_value;
 }
 
-void convert_yuyv_to_rgb(const unsigned char* __restrict yuyv_frame_pointer,
-                         unsigned char* __restrict rgb_frame_pointer,
+void convert_yuv_to_rgb(const unsigned char* __restrict yuv_frame_pointer,
+                        unsigned char* __restrict rgb_frame_pointer,
+                        FrameDimensions frame_dimensions);
+
+void convert_yuv_to_gray(const unsigned char* __restrict yuv_frame_pointer,
+                         unsigned char* __restrict gray_frame_pointer,
                          FrameDimensions frame_dimensions);
 
 #endif  // HAND_MUSIC_HPP
