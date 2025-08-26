@@ -180,17 +180,21 @@ bool V4l2Device_setup_memory_mapped_buffers(
 
     device_reference->buffer_count = buffer_request.count;
 
-    thread_handles =
-        malloc(device_reference->buffer_count * sizeof(*thread_handles));
-    thread_arguments_array = malloc(device_reference->buffer_count *
-                                    sizeof(*thread_arguments_array));
-    thread_results =
-        malloc(device_reference->buffer_count * sizeof(*thread_results));
+    thread_handles = malloc(device_reference->buffer_count * sizeof(*thread_handles));
+    if (!thread_handles) {
+        return false;
+    }
 
-    if (!thread_handles || !thread_arguments_array || !thread_results) {
+    thread_arguments_array = malloc(device_reference->buffer_count * sizeof(*thread_arguments_array));
+    if (!thread_arguments_array) {
         free(thread_handles);
+        return false;
+    }
+
+    thread_results = malloc(device_reference->buffer_count * sizeof(*thread_results));
+    if (!thread_results) {
         free(thread_arguments_array);
-        free(thread_results);
+        free(thread_handles);
         return false;
     }
 

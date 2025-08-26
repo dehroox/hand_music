@@ -2,6 +2,8 @@
 
 #include "include/frame_processing.h"
 
+#include <immintrin.h>
+#include <stddef.h>
 #include <time.h>
 
 #include "../common/constants.h"
@@ -10,42 +12,38 @@ void FrameProcessing_flip_rgb_horizontal(
     const unsigned char *source_rgb_buffer,
     unsigned char *destination_rgb_buffer,
     struct FrameDimensions frame_dimensions) {
-    const unsigned int number_of_bytes_per_pixel_in_rgba_format = 4;
-    const size_t number_of_bytes_per_row_of_pixels =
-        (size_t)frame_dimensions.width *
-        number_of_bytes_per_pixel_in_rgba_format;
+    const unsigned int bytes_per_pixel = RGB_CHANNELS;
+    const size_t bytes_per_row =
+        (size_t)frame_dimensions.width * bytes_per_pixel;
 
-    for (unsigned int current_row_index = 0;
-         current_row_index < frame_dimensions.height; ++current_row_index) {
-        const unsigned char *source_row_pointer_for_current_row =
-            source_rgb_buffer +
-            ((size_t)current_row_index * number_of_bytes_per_row_of_pixels);
+    for (unsigned int row_index = 0; row_index < frame_dimensions.height;
+         ++row_index) {
+        const unsigned char *source_row_ptr =
+            source_rgb_buffer + (row_index * bytes_per_row);
+        unsigned char *dest_row_ptr =
+            destination_rgb_buffer + (row_index * bytes_per_row);
 
-        unsigned char *destination_row_pointer_for_current_row_flipped =
-            destination_rgb_buffer +
-            ((size_t)current_row_index * number_of_bytes_per_row_of_pixels);
+        unsigned int num_sse_blocks =
+            frame_dimensions.width / PIXELS_PER_SSE_BLOCK;
+        for (unsigned int block_idx = 0; block_idx < num_sse_blocks;
+             ++block_idx) {
+            unsigned int source_col_start = block_idx * PIXELS_PER_SSE_BLOCK;
+            unsigned int dest_col_start_flipped = frame_dimensions.width -
+                                                  PIXELS_PER_SSE_BLOCK -
+                                                  source_col_start;
 
-        for (unsigned int current_column_index = 0;
-             current_column_index < frame_dimensions.width;
-             ++current_column_index) {
-            const unsigned int source_pixel_column_index = current_column_index;
-            const unsigned int destination_pixel_column_index_flipped =
-                frame_dimensions.width - 1 - current_column_index;
+            const __m128i *src_vec_ptr =
+                (const __m128i *)(source_row_ptr + ((size_t)(source_col_start *
+                                                             bytes_per_pixel)));
+            __m128i *dest_vec_ptr =
+                (__m128i *)(dest_row_ptr + ((size_t)(dest_col_start_flipped *
+                                                     bytes_per_pixel)));
 
-            const unsigned char *source_pixel_pointer =
-                source_row_pointer_for_current_row +
-                ((size_t)source_pixel_column_index *
-                 number_of_bytes_per_pixel_in_rgba_format);
+            __m128i loaded_pixels = _mm_loadu_si128(src_vec_ptr);
+            __m128i flipped_pixels =
+                _mm_shuffle_epi32(loaded_pixels, _MM_SHUFFLE(0, 1, 2, 3));
 
-            unsigned char *destination_pixel_pointer_flipped =
-                destination_row_pointer_for_current_row_flipped +
-                ((size_t)destination_pixel_column_index_flipped *
-                 number_of_bytes_per_pixel_in_rgba_format);
-
-            destination_pixel_pointer_flipped[0] = source_pixel_pointer[0];
-            destination_pixel_pointer_flipped[1] = source_pixel_pointer[1];
-            destination_pixel_pointer_flipped[2] = source_pixel_pointer[2];
-            destination_pixel_pointer_flipped[3] = source_pixel_pointer[3];
+            _mm_storeu_si128(dest_vec_ptr, flipped_pixels);
         }
     }
 }

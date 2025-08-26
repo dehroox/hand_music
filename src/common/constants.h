@@ -22,6 +22,7 @@
 
 // YUYV to Grayscale
 #define PIXELS_PER_AVX2_BLOCK 16U
+#define PIXELS_PER_SSE_BLOCK 4U
 #define BYTES_PER_YUYV_PIXEL 2U
 #define SHUFFLE_INVALID_BYTE (char)0x80
 

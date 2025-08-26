@@ -49,9 +49,8 @@ bool Application_init(ApplicationContext *context,
                                                 V4L2_MAX_BUFFERS) ||
         !V4l2Device_start_video_stream(
             context->video_device->file_descriptor)) {
-        fputs("Failed to configure video stream or buffers.\n", stderr);
-        V4l2Device_close_device(context->video_device->file_descriptor);
-        free(context->video_device);
+        fputs("Failed to configure video stream or buffers.", stderr);
+        Application_cleanup(context);
         return false;
     }
 
