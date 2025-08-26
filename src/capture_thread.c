@@ -4,9 +4,9 @@
 #include <string.h>
 
 #include "include/frame_processing.h"
+#include "include/image_conversions.h"
 #include "include/ioctl_utils.h"
 #include "include/v4l2_device_api.h"
-#include "include/image_conversions.h"
 #include "linux/videodev2.h"
 
 void *CaptureThread_function(void *arguments) {
