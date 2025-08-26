@@ -69,24 +69,21 @@ static inline void convert_yuv_lane_to_rgb(const __m128i lane_bytes,
 }
 
 /* --- Convert entire YUV frame to RGBA --- */
-void convert_yuv_to_rgb(const unsigned char *__restrict yuv_frame_pointer,
-                        unsigned char *__restrict rgb_frame_pointer,
-                        struct FrameDimensions frame_dimensions) {
-    size_t frame_width_in_pixels = (size_t)frame_dimensions.width;
-    size_t frame_height_in_pixels = (size_t)frame_dimensions.height;
-    size_t frame_stride_in_bytes = (size_t)frame_dimensions.stride_bytes;
+void ImageConversions_convert_yuv_to_rgb(
+    const unsigned char *__restrict yuv_frame_pointer,
+    unsigned char *__restrict rgb_frame_pointer,
+    struct FrameDimensions *frame_dimensions) {
+    assert(frame_dimensions->width % (PIXELS_PER_SIMD_BLOCK) == 0);
 
-    assert(frame_width_in_pixels % (PIXELS_PER_SIMD_BLOCK) == 0);
-
-    for (size_t row_index = 0; row_index < frame_height_in_pixels;
+    for (size_t row_index = 0; row_index < frame_dimensions->height;
          ++row_index) {
         const uint8_t *yuyv_row_ptr =
-            yuv_frame_pointer + (row_index * frame_stride_in_bytes);
+            yuv_frame_pointer + (row_index * frame_dimensions->stride_bytes);
         uint8_t *rgb_row_ptr =
             rgb_frame_pointer +
-            (row_index * frame_width_in_pixels * RGB_CHANNELS);
+            (row_index * frame_dimensions->width * RGB_CHANNELS);
 
-        for (size_t column_index = 0; column_index < frame_width_in_pixels;
+        for (size_t column_index = 0; column_index < frame_dimensions->width;
              column_index += PIXELS_PER_SIMD_BLOCK) {
             __m128i lane0 = _mm_loadu_si128(
                 (const __m128i *)(yuyv_row_ptr +

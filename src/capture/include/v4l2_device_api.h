@@ -6,14 +6,14 @@
 #include "../../common/common_types.h"
 #include "../../common/constants.h"
 
-struct V4l2Device_Device {
+typedef struct {
     int file_descriptor;
     struct MemoryMappedBuffer mapped_buffers[V4L2_MAX_BUFFERS];
     unsigned int buffer_count;
-};
+} V4l2DeviceContext;
 
 int V4l2Device_open(const char *device_path);
-void V4l2Device_close_device(int file_descriptor);
+void V4l2Device_close(int file_descriptor);
 
 struct FrameDimensions V4l2Device_select_highest_resolution(
     int video_file_descriptor);
@@ -21,10 +21,10 @@ struct FrameDimensions V4l2Device_select_highest_resolution(
 bool V4l2Device_configure_video_format(
     int video_file_descriptor, struct FrameDimensions *frame_dimensions);
 
-bool V4l2Device_setup_memory_mapped_buffers(struct V4l2Device_Device *device,
+bool V4l2Device_setup_memory_mapped_buffers(V4l2DeviceContext *device,
                                             unsigned int buffer_count);
 
-void V4l2Device_unmap_buffers(struct V4l2Device_Device *device);
+void V4l2Device_unmap_buffers(V4l2DeviceContext *device);
 
 bool V4l2Device_start_video_stream(int video_file_descriptor);
 

@@ -11,12 +11,12 @@
 void FrameProcessing_flip_rgb_horizontal(
     const unsigned char *source_rgb_buffer,
     unsigned char *destination_rgb_buffer,
-    struct FrameDimensions frame_dimensions) {
+    struct FrameDimensions *frame_dimensions) {
     const unsigned int bytes_per_pixel = RGB_CHANNELS;
     const size_t bytes_per_row =
-        (size_t)frame_dimensions.width * bytes_per_pixel;
+        (size_t)frame_dimensions->width * bytes_per_pixel;
 
-    for (unsigned int row_index = 0; row_index < frame_dimensions.height;
+    for (unsigned int row_index = 0; row_index < frame_dimensions->height;
          ++row_index) {
         const unsigned char *source_row_ptr =
             source_rgb_buffer + (row_index * bytes_per_row);
@@ -24,11 +24,11 @@ void FrameProcessing_flip_rgb_horizontal(
             destination_rgb_buffer + (row_index * bytes_per_row);
 
         unsigned int num_sse_blocks =
-            frame_dimensions.width / PIXELS_PER_SSE_BLOCK;
+            frame_dimensions->width / PIXELS_PER_SSE_BLOCK;
         for (unsigned int block_idx = 0; block_idx < num_sse_blocks;
              ++block_idx) {
             unsigned int source_col_start = block_idx * PIXELS_PER_SSE_BLOCK;
-            unsigned int dest_col_start_flipped = frame_dimensions.width -
+            unsigned int dest_col_start_flipped = frame_dimensions->width -
                                                   PIXELS_PER_SSE_BLOCK -
                                                   source_col_start;
 
@@ -50,9 +50,9 @@ void FrameProcessing_flip_rgb_horizontal(
 
 long long FrameProcessing_measure_conversion_time(
     void (*convert_func)(const unsigned char *, unsigned char *,
-                         struct FrameDimensions),
+                         struct FrameDimensions *),
     const unsigned char *source_frame, unsigned char *destination_frame,
-    struct FrameDimensions frame_dimensions) {
+    struct FrameDimensions *frame_dimensions) {
     struct timespec start_time;
     struct timespec end_time;
 

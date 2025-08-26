@@ -5,13 +5,12 @@
 #include <time.h>
 
 #include "../common/ioctl_utils.h"
-
 #include "include/frame_processing.h"
 #include "include/image_conversions.h"
 #include "include/v4l2_device_api.h"
 #include "linux/videodev2.h"
 
-void *CaptureThread_function(void *arguments) {
+void *CaptureThread_run(void *arguments) {
     CaptureThreadArguments *thread_arguments =
         (CaptureThreadArguments *)arguments;
 
@@ -44,21 +43,21 @@ void *CaptureThread_function(void *arguments) {
 
         total_rgb_conversion_time_microseconds +=
             FrameProcessing_measure_conversion_time(
-                convert_yuv_to_rgb, yuv_frame_data,
+                ImageConversions_convert_yuv_to_rgb, yuv_frame_data,
                 thread_arguments->rgb_frame_buffer,
-                thread_arguments->frame_dimensions);
+                &thread_arguments->frame_dimensions);
         total_gray_conversion_time_microseconds +=
             FrameProcessing_measure_conversion_time(
-                convert_yuv_to_gray, yuv_frame_data,
+                ImageConversions_convert_yuv_to_gray, yuv_frame_data,
                 thread_arguments->gray_frame_buffer,
-                thread_arguments->frame_dimensions);
+                &thread_arguments->frame_dimensions);
 
         captured_frame_count++;
 
         FrameProcessing_flip_rgb_horizontal(
             thread_arguments->rgb_frame_buffer,
             thread_arguments->rgb_flipped_buffer,
-            thread_arguments->frame_dimensions);
+            &thread_arguments->frame_dimensions);
 
         thread_arguments->display_update_callback(
             thread_arguments->display_update_context,

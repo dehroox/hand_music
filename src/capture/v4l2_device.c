@@ -26,7 +26,7 @@ int V4l2Device_open(const char *video_device_path) {
     return video_file_descriptor;
 }
 
-void V4l2Device_close_device(int video_file_descriptor) {
+void V4l2Device_close(int video_file_descriptor) {
     close(video_file_descriptor);
 }
 
@@ -104,8 +104,7 @@ bool V4l2Device_configure_video_format(
 }
 
 bool V4l2Device_setup_memory_mapped_buffers(
-    struct V4l2Device_Device *device_reference,
-    unsigned int requested_buffer_count) {
+    V4l2DeviceContext *device_reference, unsigned int requested_buffer_count) {
     int video_file_descriptor = device_reference->file_descriptor;
     struct v4l2_requestbuffers buffer_request;
 
@@ -161,7 +160,7 @@ bool V4l2Device_setup_memory_mapped_buffers(
     return true;
 }
 
-void V4l2Device_unmap_buffers(struct V4l2Device_Device *device_reference) {
+void V4l2Device_unmap_buffers(V4l2DeviceContext *device_reference) {
     for (unsigned int i = 0; i < device_reference->buffer_count; ++i) {
         if (device_reference->mapped_buffers[i].start_address) {
             munmap(device_reference->mapped_buffers[i].start_address,

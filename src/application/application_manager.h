@@ -6,11 +6,11 @@
 
 #include "../../common/common_types.h"
 
-struct V4l2Device_Device;
+#include "../capture/include/v4l2_device_api.h"
 #include "../frontend/include/frontend_manager.h"
 
 typedef struct {
-    struct V4l2Device_Device *video_device;
+    V4l2DeviceContext *video_device;
     FrontendContext *frontend_context;
     struct FrameDimensions frame_dimensions;
     _Atomic bool *running_flag;

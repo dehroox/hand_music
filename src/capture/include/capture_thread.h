@@ -9,7 +9,7 @@
 #include "v4l2_device_api.h"
 
 typedef struct {
-    struct V4l2Device_Device *device;
+    V4l2DeviceContext *device;
     unsigned char *rgb_frame_buffer;
     unsigned char *rgb_flipped_buffer;
     unsigned char *gray_frame_buffer;
@@ -19,6 +19,6 @@ typedef struct {
     void *display_update_context;
 } CaptureThreadArguments;
 
-void *CaptureThread_function(void *arguments);
+void *CaptureThread_run(void *arguments);
 
 #endif  // CAPTURE_THREAD_H

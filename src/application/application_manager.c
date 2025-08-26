@@ -20,7 +20,7 @@ bool Application_init(ApplicationContext *context,
                       const char *video_device_path) {
     bool success = false;
 
-    context->video_device = calloc(1, sizeof(struct V4l2Device_Device));
+    context->video_device = calloc(1, sizeof(V4l2DeviceContext));
     if (!context->video_device) {
         fputs("Failed to allocate V4L2 device context\n", stderr);
         goto cleanup;
@@ -105,7 +105,7 @@ void Application_run(ApplicationContext *context) {
         .display_update_callback = application_update_display_callback,
         .display_update_context = context};
 
-    if (pthread_create(&capture_thread_handle, NULL, CaptureThread_function,
+    if (pthread_create(&capture_thread_handle, NULL, CaptureThread_run,
                        &capture_thread_arguments) != 0) {
         fputs("Failed to create capture thread\n", stderr);
         return;
@@ -120,7 +120,7 @@ void Application_cleanup(ApplicationContext *context) {
     if (context->video_device) {
         V4l2Device_stop_video_stream(context->video_device->file_descriptor);
         V4l2Device_unmap_buffers(context->video_device);
-        V4l2Device_close_device(context->video_device->file_descriptor);
+        V4l2Device_close(context->video_device->file_descriptor);
         free(context->video_device);
         context->video_device = NULL;
     }

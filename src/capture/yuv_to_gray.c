@@ -5,17 +5,15 @@
 #include "../common/constants.h"
 #include "include/image_conversions.h"
 
-void convert_yuv_to_gray(const unsigned char *__restrict yuv_frame_pointer,
-                         unsigned char *__restrict gray_frame_pointer,
-                         struct FrameDimensions frame_dimensions) {
+void ImageConversions_convert_yuv_to_gray(
+    const unsigned char *__restrict yuv_frame_pointer,
+    unsigned char *__restrict gray_frame_pointer,
+    struct FrameDimensions *frame_dimensions) {
     unsigned int row_index;
     unsigned int column_index;
-    const unsigned int image_width = frame_dimensions.width;
-    const unsigned int image_height = frame_dimensions.height;
-    const size_t input_stride_bytes = (size_t)frame_dimensions.stride_bytes;
 
     /* width must be multiple of 32 pixels (16 × 2 blocks) */
-    assert(image_width % (PIXELS_PER_AVX2_BLOCK * 2U) == 0);
+    assert(frame_dimensions->width % (PIXELS_PER_AVX2_BLOCK * 2U) == 0);
 
     const __m256i shuffle_mask_256 = _mm256_setr_epi8(
         0, 2, 4, 6, 8, 10, 12, 14, SHUFFLE_INVALID_BYTE, SHUFFLE_INVALID_BYTE,
@@ -25,13 +23,14 @@ void convert_yuv_to_gray(const unsigned char *__restrict yuv_frame_pointer,
         SHUFFLE_INVALID_BYTE, SHUFFLE_INVALID_BYTE, SHUFFLE_INVALID_BYTE,
         SHUFFLE_INVALID_BYTE, SHUFFLE_INVALID_BYTE, SHUFFLE_INVALID_BYTE);
 
-    for (row_index = 0; row_index < image_height; ++row_index) {
+    for (row_index = 0; row_index < frame_dimensions->height; ++row_index) {
         const unsigned char *current_input_line =
-            yuv_frame_pointer + ((size_t)row_index * input_stride_bytes);
+            yuv_frame_pointer +
+            ((size_t)row_index * frame_dimensions->stride_bytes);
         unsigned char *current_output_line =
-            gray_frame_pointer + ((size_t)row_index * image_width);
+            gray_frame_pointer + ((size_t)row_index * frame_dimensions->width);
 
-        for (column_index = 0; column_index < image_width;
+        for (column_index = 0; column_index < frame_dimensions->width;
              column_index += PIXELS_PER_AVX2_BLOCK * 2U) {
             /* first AVX2 block */
             const unsigned char *input_block_ptr_0 =
