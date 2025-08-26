@@ -5,20 +5,21 @@ MAKEFLAGS += --no-print-directory
 PROFILE ?= debug
 BUILD_DIR := build/$(PROFILE)
 
-CXX := ccache g++
+CC := ccache gcc
 
-COMMON_FLAGS := -std=c++23 -Wall -Wextra -pedantic -pedantic-errors -Wcast-align -Wcast-qual -Wconversion -Wdisabled-optimization -Wfloat-equal -Wformat=2 -Winit-self -Wmissing-include-dirs -Wnon-virtual-dtor -Wold-style-cast -Woverloaded-virtual -Wpacked -Wparentheses -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo -Wstrict-aliasing=2 -Wstrict-overflow=5 -Wswitch-default -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -Wzero-as-null-pointer-constant -Wnull-dereference -Wduplicated-cond -Wlogical-op -Wuseless-cast -Wdouble-promotion -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")')
+COMMON_FLAGS := -std=c23 -Wall -Wextra -pedantic -pedantic-errors -Wcast-qual -Wconversion -Wdisabled-optimization -Wfloat-equal -Wformat=2 -Winit-self -Wmissing-include-dirs -Wpacked -Wparentheses -Wredundant-decls -Wshadow -Wsign-conversion -Wstrict-aliasing=2 -Wstrict-overflow=5 -Wswitch-default -Wundef -Wunreachable-code -Wunused -Wvariadic-macros -Wvla -fstrict-aliasing -fno-omit-frame-pointer -march=native -mtune=native -mavx2 $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")')
 
 COMMON_LD_FLAGS := $(shell pkg-config --libs x11)
 
 ifeq ($(PROFILE),debug)
-    CXXFLAGS := $(COMMON_FLAGS) -O0 -g3 -DDEBUG \
+    CFLAGS := $(COMMON_FLAGS) -O0 -g3 -DDEBUG \
                 -fsanitize=address,undefined,leak \
                 -fno-optimize-sibling-calls
     LDFLAGS := $(COMMON_LD_FLAGS) -fsanitize=address,undefined,leak \
                -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 else ifeq ($(PROFILE),release)
-    CXXFLAGS := $(COMMON_FLAGS) -O3 -DNDEBUG -flto -DNDEBUG -ffast-math
+    CFLAGS := $(COMMON_FLAGS) -O3 -flto -DNDEBUG -march=native -mtune=native -ffastmath -mavx2
+
     LDFLAGS := $(COMMON_LD_FLAGS) -flto -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
 else
     $(error Unknown profile "$(PROFILE)". Use: debug, release)
@@ -27,10 +28,10 @@ endif
 SRCDIR := src
 OBJDIR := $(BUILD_DIR)/obj
 BINDIR := $(BUILD_DIR)
-TARGET := $(BINDIR)/husik
+TARGET := $(BINDIR)/hand_music
 
-SOURCES := $(wildcard $(SRCDIR)/*.cpp)
-OBJECTS := $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
+SOURCES := $(wildcard $(SRCDIR)/*.c)
+OBJECTS := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 DEPS := $(OBJECTS:.o=.d)
 
 all: $(TARGET)
@@ -39,11 +40,11 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS) | $(BINDIR)
 	@echo "  LINK    $@"
-	$(Q)$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	$(Q)$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lpthread
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
-	@echo "  CXX     $<"
-	$(Q)$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+	@echo "  CC      $<"
+	$(Q)$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 $(OBJDIR) $(BINDIR):
 	$(Q)mkdir -p $@
@@ -60,6 +61,7 @@ ifeq ($(PROFILE),debug)
 	   $< 
 else
 	$(Q)$<
+
 endif
 
 info:

@@ -1,35 +1,21 @@
 Diagnostics:
   ClangTidy:
-    Add: 
+    Add:
       - bugprone-*
-      - cert-*
-      - clang-analyzer-*
-      - cppcoreguidelines-*
-      - modernize-*
       - performance-*
-      - portability-*
       - readability-*
+      - clang-analyzer-*
       - misc-*
-      - hicpp-*
-    Remove:
-      - fuchsia-trailing-return
-      - cppcoreguidelines-pro-type-union-access
-      - cppcoreguidelines-pro-type-vararg
-      - hicpp-vararg
-      - cppcoreguidelines-pro-bounds-pointer-arithmetic
-      - portability-simd-intrinsics
-      - cppcoreguidelines-pro-type-reinterpret-cast
+      - cert-*
+      - llvm-*
     CheckOptions:
-      modernize-use-nullptr.NullMacros: "NULL"
-      modernize-use-trailing-return-type.MinimumTypeNameLength: "3"
-      modernize-use-auto.MinTypeNameLength: "5"
-      readability-magic-numbers.IgnoredIntegerValues: '1;2;3;4;5'
-      
-      readability-identifier-naming.VariableCase: snake_case
-      readability-identifier-naming.FunctionCase: snake_case
-      readability-identifier-naming.ClassCase: PascalCase
-      readability-identifier-naming.StructCase: PascalCase
-      readability-identifier-naming.NamespaceCase: PascalCase
-      readability-identifier-naming.EnumCase: PascalCase
-      readability-identifier-naming.EnumConstantCase: UPPER_CASE
-      readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+      bugprone-exception-escape: true
+      bugprone-signed-char-misuse: true
+      performance-unnecessary-value-param: true
+      cert-dcl03-c: true
+      cert-err34-c: true
+      misc-non-private-member-variables-in-classes.Strict: true
+      misc-unused-parameters: true
+      misc-definitions-in-headers: true
+      misc-macro-parentheses: true
+      misc-non-constant-array-index: true
