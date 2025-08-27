@@ -24,7 +24,7 @@
 int V4l2Device_open(const char *video_device_path) {
     int video_file_descriptor = open(video_device_path, O_RDWR);
 
-    if (UNLIKELY(video_file_descriptor == -1)) {
+    if (UNLIKELY(video_file_descriptor == INVALID_FILE_DESCRIPTOR)) {
         fprintf(stderr, "Failed to open video device %s\n", video_device_path);
     }
 
@@ -51,7 +51,7 @@ void V4l2Device_select_highest_resolution(
 
     current_max_area = 0;
     while (LIKELY(ioctl(video_file_descriptor, VIDIOC_ENUM_FRAMESIZES,
-                        &frame_size_enumerator) != -1)) {
+                        &frame_size_enumerator) != INVALID_FILE_DESCRIPTOR)) {
         if (UNLIKELY(frame_size_enumerator.type ==
                      V4L2_FRMSIZE_TYPE_STEPWISE)) {
             out_frame_dimensions->width =
@@ -97,7 +97,7 @@ bool V4l2Device_configure_video_format(int video_file_descriptor,
     video_format_descriptor.fmt.pix.field = V4L2_FIELD_NONE;
 
     if (UNLIKELY(continually_retry_ioctl(video_file_descriptor, VIDIOC_S_FMT,
-                                         &video_format_descriptor) == -1)) {
+                                         &video_format_descriptor) == INVALID_FILE_DESCRIPTOR)) {
         return false;
     }
 
@@ -117,7 +117,7 @@ bool V4l2Device_setup_memory_mapped_buffers(
     buffer_request.memory = V4L2_MEMORY_MMAP;
 
     if (UNLIKELY(continually_retry_ioctl(video_file_descriptor, VIDIOC_REQBUFS,
-                                         &buffer_request) == -1)) {
+                                         &buffer_request) == INVALID_FILE_DESCRIPTOR)) {
         return false;
     }
 
@@ -135,9 +135,8 @@ bool V4l2Device_setup_memory_mapped_buffers(
         buffer_descriptor.memory = V4L2_MEMORY_MMAP;
         buffer_descriptor.index = i;
 
-        if (UNLIKELY(continually_retry_ioctl(video_file_descriptor,
-                                             VIDIOC_QUERYBUF,
-                                             &buffer_descriptor) == -1)) {
+        if (UNLIKELY(continually_retry_ioctl(video_file_descriptor, VIDIOC_QUERYBUF,
+                                             &buffer_descriptor) == INVALID_FILE_DESCRIPTOR)) {
             V4l2Device_unmap_buffers(device_reference);
             return false;
         }
@@ -156,7 +155,7 @@ bool V4l2Device_setup_memory_mapped_buffers(
             buffer_descriptor.length;
 
         if (UNLIKELY(continually_retry_ioctl(video_file_descriptor, VIDIOC_QBUF,
-                                             &buffer_descriptor) == -1)) {
+                                             &buffer_descriptor) == INVALID_FILE_DESCRIPTOR)) {
             V4l2Device_unmap_buffers(device_reference);
             return false;
         }
@@ -179,9 +178,8 @@ bool V4l2Device_start_video_stream(int video_file_descriptor) {
 
     capture_buffer_type = VIDEO_CAPTURE_TYPE;
 
-    return (bool)LIKELY(continually_retry_ioctl(video_file_descriptor,
-                                                VIDIOC_STREAMON,
-                                                &capture_buffer_type) != -1);
+    return (bool)LIKELY(continually_retry_ioctl(video_file_descriptor, VIDIOC_STREAMON,
+                                                &capture_buffer_type) != INVALID_FILE_DESCRIPTOR);
 }
 
 void V4l2Device_stop_video_stream(int video_file_descriptor) {

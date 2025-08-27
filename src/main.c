@@ -95,7 +95,8 @@ int main(int argc, char *argv[]) {
 
     app_context.video_device->file_descriptor =
         V4l2Device_open(VIDEO_DEVICE_PATH);
-    if (UNLIKELY(app_context.video_device->file_descriptor == -1)) {
+    if (UNLIKELY(app_context.video_device->file_descriptor ==
+                 INVALID_FILE_DESCRIPTOR)) {
         fputs("Failed to open video device\n", stderr);
         goto cleanup;
     }
@@ -107,7 +108,8 @@ int main(int argc, char *argv[]) {
     }
 
     V4l2Device_select_highest_resolution(
-        app_context.video_device->file_descriptor, app_context.frame_dimensions);
+        app_context.video_device->file_descriptor,
+        app_context.frame_dimensions);
     if (UNLIKELY(app_context.frame_dimensions->width == 0 ||
                  app_context.frame_dimensions->height == 0)) {
         fputs("Failed to select highest resolution.\n", stderr);
@@ -126,7 +128,8 @@ int main(int argc, char *argv[]) {
     }
 
     size_t rgb_buffer_size = (size_t)app_context.frame_dimensions->width *
-                             app_context.frame_dimensions->height * RGB_CHANNELS;
+                             app_context.frame_dimensions->height *
+                             RGB_CHANNELS;
     app_context.rgb_frame_buffer = calloc(1, rgb_buffer_size);
     app_context.rgb_flipped_buffer = calloc(1, rgb_buffer_size);
 

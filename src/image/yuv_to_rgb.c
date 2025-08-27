@@ -12,7 +12,6 @@
 #include "include/image_conversions.h"
 
 #define MAX_RGB_VALUE 255
-#define PIXELS_PER_SIMD_BLOCK 16
 #define TOTAL_BYTES_PER_SIMD_BLOCK \
     (PIXELS_PER_SIMD_BLOCK * BYTES_PER_YUYV_PIXEL)
 #define U_CHANNEL_OFFSET 128
@@ -121,17 +120,18 @@ void ImageConversions_convert_yuv_to_rgb(
             convert_yuv_lane_to_rgb(lane0, &lane0_rgb);
             convert_yuv_lane_to_rgb(lane1, &lane1_rgb);
 
-            // NOLINTBEGIN
-            __m128i r = _mm_unpacklo_epi64(lane0_rgb.r_lane, lane1_rgb.r_lane);
-            __m128i g = _mm_unpacklo_epi64(lane0_rgb.g_lane, lane1_rgb.g_lane);
-            __m128i b = _mm_unpacklo_epi64(lane0_rgb.b_lane, lane1_rgb.b_lane);
-            __m128i a = _mm_set1_epi8((char)ALPHA_BYTE_VALUE);
-            // NOLINTEND
+            __m128i red =
+                _mm_unpacklo_epi64(lane0_rgb.r_lane, lane1_rgb.r_lane);
+            __m128i green =
+                _mm_unpacklo_epi64(lane0_rgb.g_lane, lane1_rgb.g_lane);
+            __m128i blue =
+                _mm_unpacklo_epi64(lane0_rgb.b_lane, lane1_rgb.b_lane);
+            __m128i alpha = _mm_set1_epi8((char)ALPHA_BYTE_VALUE);
 
-            __m128i bg_lo = _mm_unpacklo_epi8(b, g);
-            __m128i bg_hi = _mm_unpackhi_epi8(b, g);
-            __m128i ra_lo = _mm_unpacklo_epi8(r, a);
-            __m128i ra_hi = _mm_unpackhi_epi8(r, a);
+            __m128i bg_lo = _mm_unpacklo_epi8(blue, green);
+            __m128i bg_hi = _mm_unpackhi_epi8(blue, green);
+            __m128i ra_lo = _mm_unpacklo_epi8(red, alpha);
+            __m128i ra_hi = _mm_unpackhi_epi8(red, alpha);
 
             __m128i bgra0 = _mm_unpacklo_epi16(bg_lo, ra_lo);
             __m128i bgra1 = _mm_unpackhi_epi16(bg_lo, ra_lo);
@@ -141,12 +141,13 @@ void ImageConversions_convert_yuv_to_rgb(
             uint8_t *output_pixel_ptr =
                 rgb_row_ptr + (column_index * RGB_CHANNELS);
 
-            // NOLINTBEGIN
             _mm_storeu_si128((__m128i *)(output_pixel_ptr + 0), bgra0);
-            _mm_storeu_si128((__m128i *)(output_pixel_ptr + 16), bgra1);
-            _mm_storeu_si128((__m128i *)(output_pixel_ptr + 32), bgra2);
-            _mm_storeu_si128((__m128i *)(output_pixel_ptr + 48), bgra3);
-            // NOLINTEND
+            _mm_storeu_si128(
+                (__m128i *)(output_pixel_ptr + SIMD_BLOCK_BYTE_SIZE), bgra1);
+            _mm_storeu_si128(
+                (__m128i *)(output_pixel_ptr + SIMD_BLOCK_BYTE_SIZE_X2), bgra2);
+            _mm_storeu_si128(
+                (__m128i *)(output_pixel_ptr + SIMD_BLOCK_BYTE_SIZE_X3), bgra3);
         }
     }
 }

@@ -6,6 +6,7 @@
 #include <sys/ioctl.h>
 
 #include "branch_prediction.h"
+#include "constants.h"
 
 /*
     when an ioctl call is interrupted by a signal (EINTR), it should be retried.
@@ -14,10 +15,10 @@
 static inline int continually_retry_ioctl(int file_descriptor,
                                           unsigned long request,
                                           void *argument) {
-    int result = -1;
+    int result = INVALID_FILE_DESCRIPTOR;
     while (true) {
         result = ioctl(file_descriptor, request, argument);
-        if (LIKELY(result != -1) || UNLIKELY(errno != EINTR)) {
+        if (LIKELY(result != INVALID_FILE_DESCRIPTOR) || UNLIKELY(errno != EINTR)) {
             break;
         }
     }

@@ -10,9 +10,10 @@
 
 #define PIXELS_PER_SSE_BLOCK 4U
 
-void ImageProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
-                                         unsigned char *destination_rgb_buffer,
-                                         const FrameDimensions *frame_dimensions) {
+void ImageProcessing_flip_rgb_horizontal(
+    const unsigned char *source_rgb_buffer,
+    unsigned char *destination_rgb_buffer,
+    const FrameDimensions *frame_dimensions) {
     const unsigned int bytes_per_pixel = RGB_CHANNELS;
     const size_t bytes_per_row =
         (size_t)frame_dimensions->width * bytes_per_pixel;
@@ -56,10 +57,10 @@ void ImageProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
         (size_t)frame_dimensions->width * frame_dimensions->height;
     const __m128i alpha_val_vec = _mm_set1_epi8((char)ALPHA_BYTE_VALUE);
 
-    assert(frame_dimensions->width % 16 == 0 &&
+    assert(frame_dimensions->width % PIXELS_PER_SIMD_BLOCK == 0 &&
            "Width must be a multiple of 16 for SIMD optimization.");
 
-    for (size_t i = 0; i < total_pixels; i += 16) {  // NOLINT
+    for (size_t i = 0; i < total_pixels; i += PIXELS_PER_SIMD_BLOCK) {
         // Load 16 gray pixels (16 bytes)
         __m128i gray_data =
             _mm_loadu_si128((const __m128i *)(source_gray_buffer + i));
@@ -79,12 +80,13 @@ void ImageProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
         __m128i bgra2 = _mm_unpacklo_epi16(bg_hi, ra_hi);
         __m128i bgra3 = _mm_unpackhi_epi16(bg_hi, ra_hi);
 
-        // NOLINTBEGIN
-        uint8_t *output_pixel_ptr = destination_rgb_buffer + (i * 4);
+        uint8_t *output_pixel_ptr = destination_rgb_buffer + (i * RGB_CHANNELS);
         _mm_storeu_si128((__m128i *)(output_pixel_ptr + 0), bgra0);
-        _mm_storeu_si128((__m128i *)(output_pixel_ptr + 16), bgra1);
-        _mm_storeu_si128((__m128i *)(output_pixel_ptr + 32), bgra2);
-        _mm_storeu_si128((__m128i *)(output_pixel_ptr + 48), bgra3);
-        // NOLINTEND
+        _mm_storeu_si128((__m128i *)(output_pixel_ptr + SIMD_BLOCK_BYTE_SIZE),
+                         bgra1);
+        _mm_storeu_si128(
+            (__m128i *)(output_pixel_ptr + SIMD_BLOCK_BYTE_SIZE_X2), bgra2);
+        _mm_storeu_si128(
+            (__m128i *)(output_pixel_ptr + SIMD_BLOCK_BYTE_SIZE_X3), bgra3);
     }
 }

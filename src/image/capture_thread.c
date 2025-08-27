@@ -32,7 +32,7 @@ void *CaptureThread_run(void *arguments) {
         int ioctl_result =
             continually_retry_ioctl(thread_arguments->device->file_descriptor,
                                     VIDIOC_DQBUF, &capture_buffer);
-        if (UNLIKELY(ioctl_result == -1)) {
+        if (UNLIKELY(ioctl_result == INVALID_FILE_DESCRIPTOR)) {
             continue;
         }
 
