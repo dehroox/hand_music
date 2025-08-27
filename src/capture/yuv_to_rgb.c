@@ -72,7 +72,7 @@ static inline void convert_yuv_lane_to_rgb(const __m128i lane_bytes,
 void ImageConversions_convert_yuv_to_rgb(
     const unsigned char *__restrict yuv_frame_pointer,
     unsigned char *__restrict rgb_frame_pointer,
-    struct FrameDimensions *frame_dimensions) {
+    FrameDimensions *frame_dimensions) {
     assert(frame_dimensions->width % (PIXELS_PER_SIMD_BLOCK) == 0);
 
     for (size_t row_index = 0; row_index < frame_dimensions->height;

@@ -16,8 +16,7 @@ typedef struct {
     Atom wm_delete_window_atom;
 } X11Context;
 
-bool X11Utils_init(X11Context *context,
-                   const struct FrameDimensions *frame_dimensions,
+bool X11Utils_init(X11Context *context, const FrameDimensions *frame_dimensions,
                    unsigned char *rgb_frame_buffer);
 
 void X11Utils_cleanup(X11Context *context);

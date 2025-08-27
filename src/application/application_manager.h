@@ -5,14 +5,13 @@
 #include <stdbool.h>
 
 #include "../../common/common_types.h"
-
 #include "../capture/include/v4l2_device_api.h"
 #include "../frontend/include/frontend_manager.h"
 
 typedef struct {
     V4l2DeviceContext *video_device;
     FrontendContext *frontend_context;
-    struct FrameDimensions frame_dimensions;
+    FrameDimensions frame_dimensions;
     _Atomic bool *running_flag;
     unsigned char *rgb_frame_buffer;
     unsigned char *rgb_flipped_buffer;

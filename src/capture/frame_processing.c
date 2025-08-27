@@ -8,10 +8,9 @@
 
 #include "../common/constants.h"
 
-void FrameProcessing_flip_rgb_horizontal(
-    const unsigned char *source_rgb_buffer,
-    unsigned char *destination_rgb_buffer,
-    struct FrameDimensions *frame_dimensions) {
+void FrameProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
+                                         unsigned char *destination_rgb_buffer,
+                                         FrameDimensions *frame_dimensions) {
     const unsigned int bytes_per_pixel = RGB_CHANNELS;
     const size_t bytes_per_row =
         (size_t)frame_dimensions->width * bytes_per_pixel;
@@ -50,9 +49,9 @@ void FrameProcessing_flip_rgb_horizontal(
 
 long long FrameProcessing_measure_conversion_time(
     void (*convert_func)(const unsigned char *, unsigned char *,
-                         struct FrameDimensions *),
+                         FrameDimensions *),
     const unsigned char *source_frame, unsigned char *destination_frame,
-    struct FrameDimensions *frame_dimensions) {
+    FrameDimensions *frame_dimensions) {
     struct timespec start_time;
     struct timespec end_time;
 

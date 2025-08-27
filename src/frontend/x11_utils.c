@@ -5,8 +5,7 @@
 
 #include "../common/constants.h"
 
-bool X11Utils_init(X11Context *context,
-                   const struct FrameDimensions *frame_dimensions,
+bool X11Utils_init(X11Context *context, const FrameDimensions *frame_dimensions,
                    unsigned char *rgb_frame_buffer) {
     context->display = XOpenDisplay(NULL);
     if (context->display == NULL) {
@@ -34,8 +33,8 @@ bool X11Utils_init(X11Context *context,
 
     context->x_image = XCreateImage(
         context->display, DefaultVisual(context->display, context->screen),
-        (unsigned int)DefaultDepth(context->display, context->screen), ZPixmap, 0,
-        (char *)rgb_frame_buffer, frame_dimensions->width,
+        (unsigned int)DefaultDepth(context->display, context->screen), ZPixmap,
+        0, (char *)rgb_frame_buffer, frame_dimensions->width,
         frame_dimensions->height, BITMAP_PAD, 0);
     if (context->x_image == NULL) {
         fputs("Failed to create XImage\n", stderr);

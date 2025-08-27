@@ -1,17 +1,17 @@
 #ifndef COMMON_TYPES_H
 #define COMMON_TYPES_H
 
-#include <stddef.h> 
+#include <stddef.h>
 
-struct MemoryMappedBuffer {
+typedef struct {
     void *start_address;
     size_t length_bytes;
-};
+} MemoryMappedBuffer;
 
-struct FrameDimensions {
+typedef struct {
     unsigned int width;
     unsigned int height;
     unsigned int stride_bytes;
-};
+} FrameDimensions;
 
 #endif  // COMMON_TYPES_H

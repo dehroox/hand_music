@@ -30,9 +30,9 @@ void V4l2Device_close(int video_file_descriptor) {
     close(video_file_descriptor);
 }
 
-struct FrameDimensions V4l2Device_select_highest_resolution(
+FrameDimensions V4l2Device_select_highest_resolution(
     int video_file_descriptor) {
-    struct FrameDimensions selected_frame_dimensions;
+    FrameDimensions selected_frame_dimensions;
     struct v4l2_frmsizeenum frame_size_enumerator;
     uint32_t candidate_area;
     uint32_t current_max_area;
@@ -81,8 +81,8 @@ struct FrameDimensions V4l2Device_select_highest_resolution(
     return selected_frame_dimensions;
 }
 
-bool V4l2Device_configure_video_format(
-    int video_file_descriptor, struct FrameDimensions *frame_dimensions) {
+bool V4l2Device_configure_video_format(int video_file_descriptor,
+                                       FrameDimensions *frame_dimensions) {
     struct v4l2_format video_format_descriptor;
 
     memset(&video_format_descriptor, 0, sizeof(video_format_descriptor));

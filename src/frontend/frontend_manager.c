@@ -1,7 +1,7 @@
 #include "include/frontend_manager.h"
 
 bool Frontend_init(FrontendContext *context,
-                   const struct FrameDimensions *frame_dimensions,
+                   const FrameDimensions *frame_dimensions,
                    unsigned char *rgb_flipped_buffer) {
     context->frame_dimensions = *frame_dimensions;
 
