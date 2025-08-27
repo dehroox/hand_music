@@ -147,8 +147,16 @@ void Application_cleanup(ApplicationContext *context) {
         free(context->gray_frame_buffer);
         context->gray_frame_buffer = NULL;
     }
+    if (LIKELY(context->gray_rgba_buffer)) {
+        free(context->gray_rgba_buffer);
+        context->gray_rgba_buffer = NULL;
+    }
     if (LIKELY(context->running_flag)) {
         free(context->running_flag);
         context->running_flag = NULL;
+    }
+    if (LIKELY(context->gray_view)) {
+        free(context->gray_view);
+        context->gray_view = NULL;
     }
 }
