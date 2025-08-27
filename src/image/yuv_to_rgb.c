@@ -1,4 +1,5 @@
-
+// fuck fuck fuck fuck fuck fuck!!!!!!!
+// evil mathematics
 
 #include <assert.h>
 #include <immintrin.h>
@@ -32,7 +33,6 @@
                   (char)0x80, (char)0x80, (char)0x80, (char)0x80, (char)0x80)
 
 struct RGBLane {
-
     __m128i r_lane;
     __m128i g_lane;
     __m128i b_lane;

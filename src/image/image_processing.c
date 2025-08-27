@@ -1,18 +1,15 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include "include/frame_processing.h"
+#include "include/image_processing.h"
 
 #include <immintrin.h>
 #include <stddef.h>
-#include <time.h>
 
 #include "../common/constants.h"
 
-#define MICROSECONDS_IN_SECOND 1000000LL
-#define NANOSECONDS_IN_MICROSECOND 1000LL
 #define PIXELS_PER_SSE_BLOCK 4U
 
-void FrameProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
+void ImageProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
                                          unsigned char *destination_rgb_buffer,
                                          FrameDimensions *frame_dimensions) {
     const unsigned int bytes_per_pixel = RGB_CHANNELS;
@@ -51,7 +48,7 @@ void FrameProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
     }
 }
 
-void FrameProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
+void ImageProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
                                       unsigned char *destination_rgb_buffer,
                                       FrameDimensions *frame_dimensions) {
     for (size_t i = 0;
@@ -59,24 +56,6 @@ void FrameProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
         destination_rgb_buffer[(i * 4) + 0] = source_gray_buffer[i];
         destination_rgb_buffer[(i * 4) + 1] = source_gray_buffer[i];
         destination_rgb_buffer[(i * 4) + 2] = source_gray_buffer[i];
-        destination_rgb_buffer[(i * 4) + 3] =
-            (unsigned char)ALPHA_BYTE_VALUE;  // alpha
+        destination_rgb_buffer[(i * 4) + 3] = (unsigned char)ALPHA_BYTE_VALUE;
     }
-}
-
-long long FrameProcessing_measure_conversion_time(
-    void (*convert_func)(const unsigned char *, unsigned char *,
-                         FrameDimensions *),
-    const unsigned char *source_frame, unsigned char *destination_frame,
-    FrameDimensions *frame_dimensions) {
-    struct timespec start_time;
-    struct timespec end_time;
-
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
-    convert_func(source_frame, destination_frame, frame_dimensions);
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-
-    return ((end_time.tv_sec - start_time.tv_sec) * MICROSECONDS_IN_SECOND) +
-           ((end_time.tv_nsec - start_time.tv_nsec) /
-            NANOSECONDS_IN_MICROSECOND);
 }

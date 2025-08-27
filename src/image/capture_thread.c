@@ -4,12 +4,11 @@
 #include <string.h>
 #include <time.h>
 
+#include "../common/branch_prediction.h"
 #include "../common/ioctl_utils.h"
-#include "include/frame_processing.h"
-#include "include/image_conversions.h"
+#include "../common/timing_utils.h"
 #include "include/v4l2_device_api.h"
 #include "linux/videodev2.h"
-#include "../common/branch_prediction.h"
 
 void *CaptureThread_run(void *arguments) {
     CaptureThreadArguments *thread_arguments =
@@ -28,8 +27,8 @@ void *CaptureThread_run(void *arguments) {
     capture_buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     capture_buffer.memory = V4L2_MEMORY_MMAP;
 
-        while (LIKELY(atomic_load_explicit(thread_arguments->running_flag,
-                                memory_order_relaxed))) {
+    while (LIKELY(atomic_load_explicit(thread_arguments->running_flag,
+                                       memory_order_relaxed))) {
         int ioctl_result =
             continually_retry_ioctl(thread_arguments->device->file_descriptor,
                                     VIDIOC_DQBUF, &capture_buffer);
@@ -43,30 +42,30 @@ void *CaptureThread_run(void *arguments) {
                 .start_address;
 
         total_rgb_conversion_time_microseconds +=
-            FrameProcessing_measure_conversion_time(
-                ImageConversions_convert_yuv_to_rgb, yuv_frame_data,
+            TimingUtils_measure_conversion_time(
+                thread_arguments->convert_yuv_to_rgb, yuv_frame_data,
                 thread_arguments->rgb_frame_buffer,
                 &thread_arguments->frame_dimensions);
         total_gray_conversion_time_microseconds +=
-            FrameProcessing_measure_conversion_time(
-                ImageConversions_convert_yuv_to_gray, yuv_frame_data,
+            TimingUtils_measure_conversion_time(
+                thread_arguments->convert_yuv_to_gray, yuv_frame_data,
                 thread_arguments->gray_frame_buffer,
                 &thread_arguments->frame_dimensions);
 
         captured_frame_count++;
 
         if (UNLIKELY(atomic_load_explicit(thread_arguments->gray_view,
-                                 memory_order_relaxed))) {
-            FrameProcessing_expand_grayscale(
+                                          memory_order_relaxed))) {
+            thread_arguments->expand_grayscale(
                 thread_arguments->gray_frame_buffer,
                 thread_arguments->gray_rgba_buffer,
                 &thread_arguments->frame_dimensions);
-            FrameProcessing_flip_rgb_horizontal(
+            thread_arguments->flip_rgb_horizontal(
                 thread_arguments->gray_rgba_buffer,
                 thread_arguments->rgb_flipped_buffer,
                 &thread_arguments->frame_dimensions);
         } else {
-            FrameProcessing_flip_rgb_horizontal(
+            thread_arguments->flip_rgb_horizontal(
                 thread_arguments->rgb_frame_buffer,
                 thread_arguments->rgb_flipped_buffer,
                 &thread_arguments->frame_dimensions);
