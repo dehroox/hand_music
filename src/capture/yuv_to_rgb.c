@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "../common/branch_prediction.h"
 #include "../common/common_types.h"
 #include "../common/constants.h"
 #include "include/image_conversions.h"
@@ -73,7 +74,7 @@ void ImageConversions_convert_yuv_to_rgb(
     const unsigned char *__restrict yuv_frame_pointer,
     unsigned char *__restrict rgb_frame_pointer,
     FrameDimensions *frame_dimensions) {
-    assert(frame_dimensions->width % (PIXELS_PER_SIMD_BLOCK) == 0);
+    assert(LIKELY(frame_dimensions->width % (PIXELS_PER_SIMD_BLOCK) == 0));
 
     for (size_t row_index = 0; row_index < frame_dimensions->height;
          ++row_index) {

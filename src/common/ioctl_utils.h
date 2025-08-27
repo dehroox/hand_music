@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <sys/ioctl.h>
 
+#include "branch_prediction.h"
+
 /*
     when an ioctl call is interrupted by a signal (EINTR), it should be retried.
     this function wraps the ioctl call in a loop to handle such interruptions.
@@ -15,7 +17,7 @@ static inline int continually_retry_ioctl(int file_descriptor,
     int result = -1;
     while (true) {
         result = ioctl(file_descriptor, request, argument);
-        if (result != -1 || errno != EINTR) {
+        if (LIKELY(result != -1) || UNLIKELY(errno != EINTR)) {
             break;
         }
     }

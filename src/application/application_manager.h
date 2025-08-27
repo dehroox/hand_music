@@ -4,8 +4,8 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 
-#include "../../common/common_types.h"
 #include "../capture/include/v4l2_device_api.h"
+#include "../common/common_types.h"
 #include "../frontend/include/frontend_manager.h"
 
 typedef struct {

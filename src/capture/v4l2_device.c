@@ -12,6 +12,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "../common/branch_prediction.h"
 #include "../common/common_types.h"
 #include "../common/ioctl_utils.h"
 #include "include/v4l2_device_api.h"
@@ -19,7 +20,7 @@
 int V4l2Device_open(const char *video_device_path) {
     int video_file_descriptor = open(video_device_path, O_RDWR);
 
-    if (video_file_descriptor == -1) {
+    if (UNLIKELY(video_file_descriptor == -1)) {
         fprintf(stderr, "Failed to open video device %s\n", video_device_path);
     }
 
@@ -46,9 +47,10 @@ FrameDimensions V4l2Device_select_highest_resolution(
     frame_size_enumerator.pixel_format = PIXEL_FORMAT;
 
     current_max_area = 0;
-    while (ioctl(video_file_descriptor, VIDIOC_ENUM_FRAMESIZES,
-                 &frame_size_enumerator) != -1) {
-        if (frame_size_enumerator.type == V4L2_FRMSIZE_TYPE_STEPWISE) {
+    while (LIKELY(ioctl(video_file_descriptor, VIDIOC_ENUM_FRAMESIZES,
+                        &frame_size_enumerator) != -1)) {
+        if (UNLIKELY(frame_size_enumerator.type ==
+                     V4L2_FRMSIZE_TYPE_STEPWISE)) {
             selected_frame_dimensions.width =
                 frame_size_enumerator.stepwise.max_width;
             selected_frame_dimensions.height =
@@ -56,11 +58,11 @@ FrameDimensions V4l2Device_select_highest_resolution(
             break;
         }
 
-        if (frame_size_enumerator.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
+        if (LIKELY(frame_size_enumerator.type == V4L2_FRMSIZE_TYPE_DISCRETE)) {
             candidate_area = (uint32_t)frame_size_enumerator.discrete.width *
                              (uint32_t)frame_size_enumerator.discrete.height;
 
-            if (candidate_area > current_max_area) {
+            if (LIKELY(candidate_area > current_max_area)) {
                 current_max_area = candidate_area;
                 selected_frame_dimensions.width =
                     frame_size_enumerator.discrete.width;
@@ -93,8 +95,8 @@ bool V4l2Device_configure_video_format(int video_file_descriptor,
     video_format_descriptor.fmt.pix.pixelformat = PIXEL_FORMAT;
     video_format_descriptor.fmt.pix.field = V4L2_FIELD_NONE;
 
-    if (continually_retry_ioctl(video_file_descriptor, VIDIOC_S_FMT,
-                                &video_format_descriptor) == -1) {
+    if (UNLIKELY(continually_retry_ioctl(video_file_descriptor, VIDIOC_S_FMT,
+                                         &video_format_descriptor) == -1)) {
         return false;
     }
 
@@ -113,12 +115,12 @@ bool V4l2Device_setup_memory_mapped_buffers(
     buffer_request.type = VIDEO_CAPTURE_TYPE;
     buffer_request.memory = V4L2_MEMORY_MMAP;
 
-    if (continually_retry_ioctl(video_file_descriptor, VIDIOC_REQBUFS,
-                                &buffer_request) == -1) {
+    if (UNLIKELY(continually_retry_ioctl(video_file_descriptor, VIDIOC_REQBUFS,
+                                         &buffer_request) == -1)) {
         return false;
     }
 
-    if (buffer_request.count < MINIMUM_BUFFER_COUNT) {
+    if (UNLIKELY(buffer_request.count < MINIMUM_BUFFER_COUNT)) {
         return false;
     }
 
@@ -132,8 +134,9 @@ bool V4l2Device_setup_memory_mapped_buffers(
         buffer_descriptor.memory = V4L2_MEMORY_MMAP;
         buffer_descriptor.index = i;
 
-        if (continually_retry_ioctl(video_file_descriptor, VIDIOC_QUERYBUF,
-                                    &buffer_descriptor) == -1) {
+        if (UNLIKELY(continually_retry_ioctl(video_file_descriptor,
+                                             VIDIOC_QUERYBUF,
+                                             &buffer_descriptor) == -1)) {
             V4l2Device_unmap_buffers(device_reference);
             return false;
         }
@@ -142,7 +145,8 @@ bool V4l2Device_setup_memory_mapped_buffers(
             mmap(NULL, buffer_descriptor.length, PROT_READ | PROT_WRITE,
                  MAP_SHARED, video_file_descriptor, buffer_descriptor.m.offset);
 
-        if (device_reference->mapped_buffers[i].start_address == MAP_FAILED) {
+        if (UNLIKELY(device_reference->mapped_buffers[i].start_address ==
+                     MAP_FAILED)) {
             V4l2Device_unmap_buffers(device_reference);
             return false;
         }
@@ -150,8 +154,8 @@ bool V4l2Device_setup_memory_mapped_buffers(
         device_reference->mapped_buffers[i].length_bytes =
             buffer_descriptor.length;
 
-        if (continually_retry_ioctl(video_file_descriptor, VIDIOC_QBUF,
-                                    &buffer_descriptor) == -1) {
+        if (UNLIKELY(continually_retry_ioctl(video_file_descriptor, VIDIOC_QBUF,
+                                             &buffer_descriptor) == -1)) {
             V4l2Device_unmap_buffers(device_reference);
             return false;
         }
@@ -162,7 +166,7 @@ bool V4l2Device_setup_memory_mapped_buffers(
 
 void V4l2Device_unmap_buffers(V4l2DeviceContext *device_reference) {
     for (unsigned int i = 0; i < device_reference->buffer_count; ++i) {
-        if (device_reference->mapped_buffers[i].start_address) {
+        if (LIKELY(device_reference->mapped_buffers[i].start_address)) {
             munmap(device_reference->mapped_buffers[i].start_address,
                    device_reference->mapped_buffers[i].length_bytes);
         }
@@ -174,9 +178,9 @@ bool V4l2Device_start_video_stream(int video_file_descriptor) {
 
     capture_buffer_type = VIDEO_CAPTURE_TYPE;
 
-    return (bool)(continually_retry_ioctl(video_file_descriptor,
-                                          VIDIOC_STREAMON,
-                                          &capture_buffer_type) != -1);
+    return (bool)LIKELY(continually_retry_ioctl(video_file_descriptor,
+                                                VIDIOC_STREAMON,
+                                                &capture_buffer_type) != -1);
 }
 
 void V4l2Device_stop_video_stream(int video_file_descriptor) {

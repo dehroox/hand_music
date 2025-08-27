@@ -3,12 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../common/branch_prediction.h"
 #include "../common/constants.h"
 
 bool X11Utils_init(X11Context *context, const FrameDimensions *frame_dimensions,
                    unsigned char *rgb_frame_buffer) {
     context->display = XOpenDisplay(NULL);
-    if (context->display == NULL) {
+    if (UNLIKELY(context->display == NULL)) {
         fputs("Cannot open X display\n", stderr);
         return false;
     }
@@ -36,7 +37,7 @@ bool X11Utils_init(X11Context *context, const FrameDimensions *frame_dimensions,
         (unsigned int)DefaultDepth(context->display, context->screen), ZPixmap,
         0, (char *)rgb_frame_buffer, frame_dimensions->width,
         frame_dimensions->height, BITMAP_PAD, 0);
-    if (context->x_image == NULL) {
+    if (UNLIKELY(context->x_image == NULL)) {
         fputs("Failed to create XImage\n", stderr);
         XCloseDisplay(context->display);
         return false;
@@ -48,10 +49,10 @@ bool X11Utils_init(X11Context *context, const FrameDimensions *frame_dimensions,
 }
 
 void X11Utils_cleanup(X11Context *context) {
-    if (context->x_image != NULL) {
+    if (LIKELY(context->x_image != NULL)) {
         XDestroyImage(context->x_image);
     }
-    if (context->display != NULL) {
+    if (LIKELY(context->display != NULL)) {
         XCloseDisplay(context->display);
     }
 }

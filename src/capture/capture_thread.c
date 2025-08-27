@@ -9,6 +9,7 @@
 #include "include/image_conversions.h"
 #include "include/v4l2_device_api.h"
 #include "linux/videodev2.h"
+#include "../common/branch_prediction.h"
 
 void *CaptureThread_run(void *arguments) {
     CaptureThreadArguments *thread_arguments =
@@ -27,12 +28,12 @@ void *CaptureThread_run(void *arguments) {
     capture_buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     capture_buffer.memory = V4L2_MEMORY_MMAP;
 
-    while (atomic_load_explicit(thread_arguments->running_flag,
-                                memory_order_relaxed)) {
+        while (LIKELY(atomic_load_explicit(thread_arguments->running_flag,
+                                memory_order_relaxed))) {
         int ioctl_result =
             continually_retry_ioctl(thread_arguments->device->file_descriptor,
                                     VIDIOC_DQBUF, &capture_buffer);
-        if (ioctl_result == -1) {
+        if (UNLIKELY(ioctl_result == -1)) {
             continue;
         }
 
@@ -54,8 +55,8 @@ void *CaptureThread_run(void *arguments) {
 
         captured_frame_count++;
 
-        if (atomic_load_explicit(thread_arguments->gray_view,
-                                 memory_order_relaxed)) {
+        if (UNLIKELY(atomic_load_explicit(thread_arguments->gray_view,
+                                 memory_order_relaxed))) {
             FrameProcessing_expand_grayscale(
                 thread_arguments->gray_frame_buffer,
                 thread_arguments->gray_rgba_buffer,

@@ -6,6 +6,7 @@
 
 #include "../capture/include/capture_thread.h"
 #include "../capture/include/v4l2_device_api.h"
+#include "../common/branch_prediction.h"
 #include "../common/constants.h"
 #include "../frontend/include/frontend_manager.h"
 
@@ -21,32 +22,32 @@ bool Application_init(ApplicationContext *context,
     bool success = false;
 
     context->video_device = calloc(1, sizeof(V4l2DeviceContext));
-    if (!context->video_device) {
+    if (UNLIKELY(!context->video_device)) {
         fputs("Failed to allocate V4L2 device context\n", stderr);
         goto cleanup;
     }
 
     context->video_device->file_descriptor = V4l2Device_open(video_device_path);
-    if (context->video_device->file_descriptor == -1) {
+    if (UNLIKELY(context->video_device->file_descriptor == -1)) {
         fputs("Failed to open video device\n", stderr);
         goto cleanup;
     }
 
     context->frame_dimensions = V4l2Device_select_highest_resolution(
         context->video_device->file_descriptor);
-    if (context->frame_dimensions.width == 0 ||
-        context->frame_dimensions.height == 0) {
+    if (UNLIKELY(context->frame_dimensions.width == 0 ||
+                 context->frame_dimensions.height == 0)) {
         fputs("Failed to select highest resolution.\n", stderr);
         goto cleanup;
     }
 
-    if (!V4l2Device_configure_video_format(
-            context->video_device->file_descriptor,
-            &context->frame_dimensions) ||
-        !V4l2Device_setup_memory_mapped_buffers(context->video_device,
-                                                V4L2_MAX_BUFFERS) ||
-        !V4l2Device_start_video_stream(
-            context->video_device->file_descriptor)) {
+    if (UNLIKELY(!V4l2Device_configure_video_format(
+                     context->video_device->file_descriptor,
+                     &context->frame_dimensions) ||
+                 !V4l2Device_setup_memory_mapped_buffers(context->video_device,
+                                                         V4L2_MAX_BUFFERS) ||
+                 !V4l2Device_start_video_stream(
+                     context->video_device->file_descriptor))) {
         fputs("Failed to configure video stream or buffers.\n", stderr);
         goto cleanup;
     }
@@ -61,26 +62,27 @@ bool Application_init(ApplicationContext *context,
                       context->frame_dimensions.height);
     context->gray_rgba_buffer = calloc(1, rgb_buffer_size);
 
-    if (!context->rgb_frame_buffer || !context->rgb_flipped_buffer ||
-        !context->gray_frame_buffer || !context->gray_rgba_buffer) {
+    if (UNLIKELY(!context->rgb_frame_buffer || !context->rgb_flipped_buffer ||
+                 !context->gray_frame_buffer || !context->gray_rgba_buffer)) {
         fputs("Failed to allocate frame buffers.\n", stderr);
         goto cleanup;
     }
 
     context->frontend_context = calloc(1, sizeof(FrontendContext));
-    if (!context->frontend_context) {
+    if (UNLIKELY(!context->frontend_context)) {
         fputs("Failed to allocate frontend context\n", stderr);
         goto cleanup;
     }
 
-    if (!Frontend_init(context->frontend_context, &context->frame_dimensions,
-                       context->rgb_flipped_buffer)) {
+    if (UNLIKELY(!Frontend_init(context->frontend_context,
+                                &context->frame_dimensions,
+                                context->rgb_flipped_buffer))) {
         fputs("Failed to initialize frontend.\n", stderr);
         goto cleanup;
     }
 
     context->running_flag = calloc(1, sizeof(atomic_bool));
-    if (!context->running_flag) {
+    if (UNLIKELY(!context->running_flag)) {
         fputs("Failed to allocate running flag\n", stderr);
         goto cleanup;
     }
@@ -89,7 +91,7 @@ bool Application_init(ApplicationContext *context,
     success = true;
 
 cleanup:
-    if (!success) {
+    if (UNLIKELY(!success)) {
         Application_cleanup(context);
     }
     return success;
@@ -109,8 +111,8 @@ void Application_run(ApplicationContext *context) {
         .display_update_callback = application_update_display_callback,
         .display_update_context = context};
 
-    if (pthread_create(&capture_thread_handle, NULL, CaptureThread_run,
-                       &capture_thread_arguments) != 0) {
+    if (UNLIKELY(pthread_create(&capture_thread_handle, NULL, CaptureThread_run,
+                                &capture_thread_arguments) != 0)) {
         fputs("Failed to create capture thread\n", stderr);
         return;
     }
@@ -121,31 +123,31 @@ void Application_run(ApplicationContext *context) {
 }
 
 void Application_cleanup(ApplicationContext *context) {
-    if (context->video_device) {
+    if (LIKELY(context->video_device)) {
         V4l2Device_stop_video_stream(context->video_device->file_descriptor);
         V4l2Device_unmap_buffers(context->video_device);
         V4l2Device_close(context->video_device->file_descriptor);
         free(context->video_device);
         context->video_device = NULL;
     }
-    if (context->frontend_context) {
+    if (LIKELY(context->frontend_context)) {
         Frontend_cleanup(context->frontend_context);
         free(context->frontend_context);
         context->frontend_context = NULL;
     }
-    if (context->rgb_frame_buffer) {
+    if (LIKELY(context->rgb_frame_buffer)) {
         free(context->rgb_frame_buffer);
         context->rgb_frame_buffer = NULL;
     }
-    if (context->rgb_flipped_buffer) {
+    if (LIKELY(context->rgb_flipped_buffer)) {
         free(context->rgb_flipped_buffer);
         context->rgb_flipped_buffer = NULL;
     }
-    if (context->gray_frame_buffer) {
+    if (LIKELY(context->gray_frame_buffer)) {
         free(context->gray_frame_buffer);
         context->gray_frame_buffer = NULL;
     }
-    if (context->running_flag) {
+    if (LIKELY(context->running_flag)) {
         free(context->running_flag);
         context->running_flag = NULL;
     }

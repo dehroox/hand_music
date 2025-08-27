@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <immintrin.h>
 
+#include "../common/branch_prediction.h"
 #include "../common/common_types.h"
 #include "../common/constants.h"
 #include "include/image_conversions.h"
@@ -13,7 +14,7 @@ void ImageConversions_convert_yuv_to_gray(
     unsigned int column_index;
 
     /* width must be multiple of 32 pixels (16 × 2 blocks) */
-    assert(frame_dimensions->width % (PIXELS_PER_AVX2_BLOCK * 2U) == 0);
+    assert(LIKELY(frame_dimensions->width % (PIXELS_PER_AVX2_BLOCK * 2U) == 0));
 
     const __m256i shuffle_mask_256 = _mm256_setr_epi8(
         0, 2, 4, 6, 8, 10, 12, 14, SHUFFLE_INVALID_BYTE, SHUFFLE_INVALID_BYTE,
