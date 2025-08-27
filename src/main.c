@@ -24,7 +24,6 @@ typedef struct {
     unsigned char *rgb_frame_buffer;
     unsigned char *rgb_flipped_buffer;
     unsigned char *gray_frame_buffer;
-    unsigned char *gray_rgba_buffer;
     _Atomic bool *gray_view;
 } ApplicationContext;
 
@@ -59,10 +58,6 @@ static inline void cleanup_application_resources(ApplicationContext *context) {
     if (LIKELY(context->gray_frame_buffer)) {
         free(context->gray_frame_buffer);
         context->gray_frame_buffer = NULL;
-    }
-    if (LIKELY(context->gray_rgba_buffer)) {
-        free(context->gray_rgba_buffer);
-        context->gray_rgba_buffer = NULL;
     }
     if (LIKELY(context->running_flag)) {
         free(context->running_flag);
@@ -128,11 +123,9 @@ int main(int argc, char *argv[]) {
     app_context.gray_frame_buffer =
         calloc(1, (size_t)app_context.frame_dimensions.width *
                       app_context.frame_dimensions.height);
-    app_context.gray_rgba_buffer = calloc(1, rgb_buffer_size);
-
-    if (UNLIKELY(
-            !app_context.rgb_frame_buffer || !app_context.rgb_flipped_buffer ||
-            !app_context.gray_frame_buffer || !app_context.gray_rgba_buffer)) {
+    if (UNLIKELY(!app_context.rgb_frame_buffer ||
+                 !app_context.rgb_flipped_buffer ||
+                 !app_context.gray_frame_buffer)) {
         fputs("Failed to allocate frame buffers.\n", stderr);
         goto cleanup;
     }
@@ -171,7 +164,6 @@ cleanup:
         .rgb_frame_buffer = app_context.rgb_frame_buffer,
         .rgb_flipped_buffer = app_context.rgb_flipped_buffer,
         .gray_frame_buffer = app_context.gray_frame_buffer,
-        .gray_rgba_buffer = app_context.gray_rgba_buffer,
         .frame_dimensions = app_context.frame_dimensions,
         .running_flag = app_context.running_flag,
         .gray_view = app_context.gray_view,
