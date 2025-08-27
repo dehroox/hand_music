@@ -1,0 +1,20 @@
+Checks: >
+  abseil-*,
+  android-*,
+  google-*,
+  hicpp-*,
+  modernize-*,
+  bugprone-*,
+  performance-*,
+  readability-*,
+  clang-analyzer-*,
+  misc-*,
+  cert-*,
+  llvm-*,
+  zircon-*,
+  openmp-*,
+  linuxkernel-*,
+  darwin-*
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'   # scan all headers
+AnalyzeTemporaryDtors: true

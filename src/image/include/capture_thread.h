@@ -18,7 +18,7 @@ typedef struct {
     _Atomic bool *gray_view;
     void (*display_update_callback)(void *context, unsigned char *frame_data);
     void *display_update_context;
-    
+
 } CaptureThreadArguments;
 
 void *CaptureThread_run(void *arguments);

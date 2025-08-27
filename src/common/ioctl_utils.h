@@ -18,7 +18,8 @@ static inline int continually_retry_ioctl(int file_descriptor,
     int result = INVALID_FILE_DESCRIPTOR;
     while (true) {
         result = ioctl(file_descriptor, request, argument);
-        if (LIKELY(result != INVALID_FILE_DESCRIPTOR) || UNLIKELY(errno != EINTR)) {
+        if (LIKELY(result != INVALID_FILE_DESCRIPTOR) ||
+            UNLIKELY(errno != EINTR)) {
             break;
         }
     }

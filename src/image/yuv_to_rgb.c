@@ -11,17 +11,6 @@
 #include "../common/constants.h"
 #include "include/image_conversions.h"
 
-#define MAX_RGB_VALUE 255
-#define TOTAL_BYTES_PER_SIMD_BLOCK \
-    (PIXELS_PER_SIMD_BLOCK * BYTES_PER_YUYV_PIXEL)
-#define U_CHANNEL_OFFSET 128
-#define V_CHANNEL_OFFSET 128
-#define SHIFT_FIXED_POINT 8
-#define RED_FROM_V 359
-#define GREEN_FROM_U 88
-#define GREEN_FROM_V 183
-#define BLUE_FROM_U 454
-
 #define SHUFFLE_YUV_MASK \
     _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15)
 #define DUPLICATE_U_MASK                                                      \
@@ -40,6 +29,16 @@ struct RGBLane {
 /* --- Convert a single SIMD lane of YUV to RGB --- */
 static inline void convert_yuv_lane_to_rgb(const __m128i lane_bytes,
                                            struct RGBLane *out_rgb_lane) {
+    assert(out_rgb_lane != NULL && "out_rgb_lane cannot be NULL");
+
+    static const short int MAX_RGB_VALUE = 255;
+    static const short int U_CHANNEL_OFFSET = 128;
+    static const short int V_CHANNEL_OFFSET = 128;
+    static const short int SHIFT_FIXED_POINT = 8;
+    static const short int RED_FROM_V = 359;
+    static const short int GREEN_FROM_U = 88;
+    static const short int GREEN_FROM_V = 183;
+    static const short int BLUE_FROM_U = 454;
     __m128i zero_vector = _mm_setzero_si128();
     __m128i u_offset_vector = _mm_set1_epi16(U_CHANNEL_OFFSET);
     __m128i v_offset_vector = _mm_set1_epi16(V_CHANNEL_OFFSET);
@@ -95,7 +94,17 @@ void ImageConversions_convert_yuv_to_rgb(
     const unsigned char *__restrict yuv_frame_pointer,
     unsigned char *__restrict rgb_frame_pointer,
     const FrameDimensions *frame_dimensions) {
+    assert(yuv_frame_pointer != NULL && "yuv_frame_pointer cannot be NULL");
+    assert(rgb_frame_pointer != NULL && "rgb_frame_pointer cannot be NULL");
+    assert(frame_dimensions != NULL && "frame_dimensions cannot be NULL");
+    assert(frame_dimensions->width > 0 &&
+           "frame_dimensions->width must be greater than 0");
+    assert(frame_dimensions->height > 0 &&
+           "frame_dimensions->heig  ht must be greater than 0");
     assert(LIKELY(frame_dimensions->width % (PIXELS_PER_SIMD_BLOCK) == 0));
+
+    static const unsigned int TOTAL_BYTES_PER_SIMD_BLOCK =
+        PIXELS_PER_SIMD_BLOCK * BYTES_PER_YUYV_PIXEL;
 
     for (size_t row_index = 0; row_index < frame_dimensions->height;
          ++row_index) {

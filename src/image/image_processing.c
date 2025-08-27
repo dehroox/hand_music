@@ -8,12 +8,23 @@
 #include "../common/constants.h"
 #include "include/image_processing.h"
 
-#define PIXELS_PER_SSE_BLOCK 4U
-
 void ImageProcessing_flip_rgb_horizontal(
     const unsigned char *source_rgb_buffer,
     unsigned char *destination_rgb_buffer,
     const FrameDimensions *frame_dimensions) {
+    const unsigned char PIXELS_PER_SSE_BLOCK = 4U;
+
+    assert(source_rgb_buffer != NULL && "source_rgb_buffer cannot be NULL");
+    assert(destination_rgb_buffer != NULL &&
+           "destination_rgb_buffer cannot be NULL");
+    assert(frame_dimensions != NULL && "frame_dimensions cannot be NULL");
+    assert(frame_dimensions->width > 0 &&
+           "frame_dimensions->width must be greater than 0");
+    assert(frame_dimensions->height > 0 &&
+           "frame_dimensions->height must be greater than 0");
+    assert(
+        frame_dimensions->width % PIXELS_PER_SSE_BLOCK == 0 &&
+        "frame_dimensions->width must be a multiple of PIXELS_PER_SSE_BLOCK");
     const unsigned int bytes_per_pixel = RGB_CHANNELS;
     const size_t bytes_per_row =
         (size_t)frame_dimensions->width * bytes_per_pixel;
@@ -53,6 +64,14 @@ void ImageProcessing_flip_rgb_horizontal(
 void ImageProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
                                       unsigned char *destination_rgb_buffer,
                                       const FrameDimensions *frame_dimensions) {
+    assert(source_gray_buffer != NULL && "source_gray_buffer cannot be NULL");
+    assert(destination_rgb_buffer != NULL &&
+           "destination_rgb_buffer cannot be NULL");
+    assert(frame_dimensions != NULL && "frame_dimensions cannot be NULL");
+    assert(frame_dimensions->width > 0 &&
+           "frame_dimensions->width must be greater than 0");
+    assert(frame_dimensions->height > 0 &&
+           "frame_dimensions->height must be greater than 0");
     const size_t total_pixels =
         (size_t)frame_dimensions->width * frame_dimensions->height;
     const __m128i alpha_val_vec = _mm_set1_epi8((char)ALPHA_BYTE_VALUE);
@@ -61,7 +80,6 @@ void ImageProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
            "Width must be a multiple of 16 for SIMD optimization.");
 
     for (size_t i = 0; i < total_pixels; i += PIXELS_PER_SIMD_BLOCK) {
-        // Load 16 gray pixels (16 bytes)
         __m128i gray_data =
             _mm_loadu_si128((const __m128i *)(source_gray_buffer + i));
 

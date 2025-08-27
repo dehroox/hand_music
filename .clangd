@@ -1,6 +1,11 @@
 Diagnostics:
   ClangTidy:
     Add:
+      - abseil-*
+      - android-*
+      - google-*
+      - hicpp-*
+      - modernize-*
       - bugprone-*
       - performance-*
       - readability-*
@@ -8,16 +13,9 @@ Diagnostics:
       - misc-*
       - cert-*
       - llvm-*
+      - zircon-*
+      - openmp-*
+      - linuxkernel-*
+      - darwin-*
     Remove:
-      - cert-err33-c
-    CheckOptions:
-      bugprone-exception-escape: true
-      bugprone-signed-char-misuse: true
-      performance-unnecessary-value-param: true
-      cert-dcl03-c: true
-      cert-err34-c: true
-      misc-non-private-member-variables-in-classes.Strict: true
-      misc-unused-parameters: true
-      misc-definitions-in-headers: true
-      misc-macro-parentheses: true
-      misc-non-constant-array-index: true
+      - android-cloexec-open

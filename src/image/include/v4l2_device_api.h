@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "../../common/common_types.h"
-#include "../../common/constants.h"
+#include "constants.h"
 
 typedef struct {
     int file_descriptor;
@@ -15,7 +15,8 @@ typedef struct {
 int V4l2Device_open(const char *device_path);
 void V4l2Device_close(int file_descriptor);
 
-void V4l2Device_select_highest_resolution(int video_file_descriptor, FrameDimensions *out_frame_dimensions);
+void V4l2Device_select_highest_resolution(
+    int video_file_descriptor, FrameDimensions *out_frame_dimensions);
 
 bool V4l2Device_configure_video_format(int video_file_descriptor,
                                        FrameDimensions *frame_dimensions);
