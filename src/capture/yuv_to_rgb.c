@@ -1,4 +1,4 @@
-// what the fuck, fuck fuck??
+
 
 #include <assert.h>
 #include <immintrin.h>
@@ -103,7 +103,7 @@ void ImageConversions_convert_yuv_to_rgb(
             __m128i r = _mm_unpacklo_epi64(lane0_rgb.r_lane, lane1_rgb.r_lane);
             __m128i g = _mm_unpacklo_epi64(lane0_rgb.g_lane, lane1_rgb.g_lane);
             __m128i b = _mm_unpacklo_epi64(lane0_rgb.b_lane, lane1_rgb.b_lane);
-            __m128i a = _mm_set1_epi8(ALPHA_BYTE_VALUE);
+            __m128i a = _mm_set1_epi8((char)ALPHA_BYTE_VALUE);
             // NOLINTEND
 
             __m128i bg_lo = _mm_unpacklo_epi8(b, g);
