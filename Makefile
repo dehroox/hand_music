@@ -15,12 +15,11 @@ ifeq ($(PROFILE),debug)
     CFLAGS := $(COMMON_FLAGS) -O0 -g3 -DDEBUG \
                 -fsanitize=address,undefined,leak \
                 -fno-optimize-sibling-calls
-    LDFLAGS := $(COMMON_LD_FLAGS) -fsanitize=address,undefined,leak \
-               -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
+    LDFLAGS :=  -fuse-ld=mold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie $(COMMON_LD_FLAGS) -fsanitize=address,undefined,leak 
 else ifeq ($(PROFILE),release)
     CFLAGS := $(COMMON_FLAGS) -O3 -flto -DNDEBUG -march=native -mtune=native -ffast-math -mavx2
 
-    LDFLAGS := $(COMMON_LD_FLAGS) -flto -fuse-ld=gold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie
+    LDFLAGS := -fuse-ld=mold -Wl,-z,relro,-z,now -Wl,-z,noexecstack -pie $(COMMON_LD_FLAGS) -flto
 else
     $(error Unknown profile "$(PROFILE)". Use: debug, release)
 endif
