@@ -10,7 +10,29 @@
 #include "../common/constants.h"
 #include "include/image_conversions.h"
 
+#define MAX_RGB_VALUE 255
+#define PIXELS_PER_SIMD_BLOCK 16
+#define TOTAL_BYTES_PER_SIMD_BLOCK \
+    (PIXELS_PER_SIMD_BLOCK * BYTES_PER_YUYV_PIXEL)
+#define U_CHANNEL_OFFSET 128
+#define V_CHANNEL_OFFSET 128
+#define SHIFT_FIXED_POINT 8
+#define RED_FROM_V 359
+#define GREEN_FROM_U 88
+#define GREEN_FROM_V 183
+#define BLUE_FROM_U 454
+
+#define SHUFFLE_YUV_MASK \
+    _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15)
+#define DUPLICATE_U_MASK                                                      \
+    _mm_setr_epi8(0, 0, 2, 2, 4, 4, 6, 6, (char)0x80, (char)0x80, (char)0x80, \
+                  (char)0x80, (char)0x80, (char)0x80, (char)0x80, (char)0x80)
+#define DUPLICATE_V_MASK                                                      \
+    _mm_setr_epi8(1, 1, 3, 3, 5, 5, 7, 7, (char)0x80, (char)0x80, (char)0x80, \
+                  (char)0x80, (char)0x80, (char)0x80, (char)0x80, (char)0x80)
+
 struct RGBLane {
+
     __m128i r_lane;
     __m128i g_lane;
     __m128i b_lane;

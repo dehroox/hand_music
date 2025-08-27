@@ -17,6 +17,10 @@
 #include "../common/ioctl_utils.h"
 #include "include/v4l2_device_api.h"
 
+#define MINIMUM_BUFFER_COUNT 2
+#define PIXEL_FORMAT V4L2_PIX_FMT_YUYV
+#define VIDEO_CAPTURE_TYPE V4L2_BUF_TYPE_VIDEO_CAPTURE
+
 int V4l2Device_open(const char *video_device_path) {
     int video_file_descriptor = open(video_device_path, O_RDWR);
 

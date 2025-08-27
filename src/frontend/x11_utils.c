@@ -4,7 +4,11 @@
 #include <stdlib.h>
 
 #include "../common/branch_prediction.h"
-#include "../common/constants.h"
+
+#define WINDOW_BORDER_WIDTH 1
+#define WINDOW_POSITION_X 10
+#define WINDOW_POSITION_Y 10
+#define BITMAP_PAD 32
 
 bool X11Utils_init(X11Context *context, const FrameDimensions *frame_dimensions,
                    unsigned char *rgb_frame_buffer) {

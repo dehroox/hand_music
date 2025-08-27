@@ -6,6 +6,9 @@
 #include "../common/constants.h"
 #include "include/image_conversions.h"
 
+#define PIXELS_PER_AVX2_BLOCK 16U
+#define SHUFFLE_INVALID_BYTE -128
+
 void ImageConversions_convert_yuv_to_gray(
     const unsigned char *__restrict yuv_frame_pointer,
     unsigned char *__restrict gray_frame_pointer,

@@ -8,6 +8,10 @@
 
 #include "../common/constants.h"
 
+#define MICROSECONDS_IN_SECOND 1000000LL
+#define NANOSECONDS_IN_MICROSECOND 1000LL
+#define PIXELS_PER_SSE_BLOCK 4U
+
 void FrameProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
                                          unsigned char *destination_rgb_buffer,
                                          FrameDimensions *frame_dimensions) {
