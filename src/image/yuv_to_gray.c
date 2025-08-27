@@ -12,7 +12,7 @@
 void ImageConversions_convert_yuv_to_gray(
     const unsigned char *__restrict yuv_frame_pointer,
     unsigned char *__restrict gray_frame_pointer,
-    FrameDimensions *frame_dimensions) {
+    const FrameDimensions *frame_dimensions) {
     unsigned int row_index;
     unsigned int column_index;
 

@@ -35,16 +35,15 @@ void V4l2Device_close(int video_file_descriptor) {
     close(video_file_descriptor);
 }
 
-FrameDimensions V4l2Device_select_highest_resolution(
-    int video_file_descriptor) {
-    FrameDimensions selected_frame_dimensions;
+void V4l2Device_select_highest_resolution(
+    int video_file_descriptor, FrameDimensions *out_frame_dimensions) {
     struct v4l2_frmsizeenum frame_size_enumerator;
     uint32_t candidate_area;
     uint32_t current_max_area;
 
-    selected_frame_dimensions.width = 0U;
-    selected_frame_dimensions.height = 0U;
-    selected_frame_dimensions.stride_bytes = 0U;
+    out_frame_dimensions->width = 0U;
+    out_frame_dimensions->height = 0U;
+    out_frame_dimensions->stride_bytes = 0U;
 
     memset(&frame_size_enumerator, 0, sizeof(frame_size_enumerator));
     frame_size_enumerator.index = 0;
@@ -55,9 +54,9 @@ FrameDimensions V4l2Device_select_highest_resolution(
                         &frame_size_enumerator) != -1)) {
         if (UNLIKELY(frame_size_enumerator.type ==
                      V4L2_FRMSIZE_TYPE_STEPWISE)) {
-            selected_frame_dimensions.width =
+            out_frame_dimensions->width =
                 frame_size_enumerator.stepwise.max_width;
-            selected_frame_dimensions.height =
+            out_frame_dimensions->height =
                 frame_size_enumerator.stepwise.max_height;
             break;
         }
@@ -68,9 +67,9 @@ FrameDimensions V4l2Device_select_highest_resolution(
 
             if (LIKELY(candidate_area > current_max_area)) {
                 current_max_area = candidate_area;
-                selected_frame_dimensions.width =
+                out_frame_dimensions->width =
                     frame_size_enumerator.discrete.width;
-                selected_frame_dimensions.height =
+                out_frame_dimensions->height =
                     frame_size_enumerator.discrete.height;
             }
         }
@@ -80,11 +79,9 @@ FrameDimensions V4l2Device_select_highest_resolution(
 
     fprintf(stdout,
             "Using highest supported resolution: %ux%u (Aspect ratio: %f)\n",
-            selected_frame_dimensions.width, selected_frame_dimensions.height,
-            (double)selected_frame_dimensions.width /
-                selected_frame_dimensions.height);
-
-    return selected_frame_dimensions;
+            out_frame_dimensions->width, out_frame_dimensions->height,
+            (double)out_frame_dimensions->width /
+                out_frame_dimensions->height);
 }
 
 bool V4l2Device_configure_video_format(int video_file_descriptor,

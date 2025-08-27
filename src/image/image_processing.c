@@ -12,7 +12,7 @@
 
 void ImageProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
                                          unsigned char *destination_rgb_buffer,
-                                         FrameDimensions *frame_dimensions) {
+                                         const FrameDimensions *frame_dimensions) {
     const unsigned int bytes_per_pixel = RGB_CHANNELS;
     const size_t bytes_per_row =
         (size_t)frame_dimensions->width * bytes_per_pixel;
@@ -51,7 +51,7 @@ void ImageProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
 
 void ImageProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
                                       unsigned char *destination_rgb_buffer,
-                                      FrameDimensions *frame_dimensions) {
+                                      const FrameDimensions *frame_dimensions) {
     const size_t total_pixels =
         (size_t)frame_dimensions->width * frame_dimensions->height;
     const __m128i alpha_val_vec = _mm_set1_epi8((char)ALPHA_BYTE_VALUE);

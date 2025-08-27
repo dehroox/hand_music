@@ -4,9 +4,9 @@
 bool Frontend_init(FrontendContext *context,
                    const FrameDimensions *frame_dimensions,
                    unsigned char *rgb_flipped_buffer) {
-    context->frame_dimensions = *frame_dimensions;
+    context->frame_dimensions = frame_dimensions;
 
-    return X11Utils_init(&context->x11_context, frame_dimensions,
+    return X11Utils_init(&context->x11_context, context->frame_dimensions,
                          rgb_flipped_buffer);
 }
 

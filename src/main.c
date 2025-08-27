@@ -19,7 +19,7 @@
 typedef struct {
     V4l2DeviceContext *video_device;
     FrontendContext *frontend_context;
-    FrameDimensions frame_dimensions;
+    FrameDimensions *frame_dimensions;
     _Atomic bool *running_flag;
     unsigned char *rgb_frame_buffer;
     unsigned char *rgb_flipped_buffer;
@@ -59,6 +59,10 @@ static inline void cleanup_application_resources(ApplicationContext *context) {
         free(context->gray_frame_buffer);
         context->gray_frame_buffer = NULL;
     }
+    if (LIKELY(context->frame_dimensions)) {
+        free((void *)context->frame_dimensions);
+        context->frame_dimensions = NULL;
+    }
     if (LIKELY(context->running_flag)) {
         free(context->running_flag);
         context->running_flag = NULL;
@@ -96,17 +100,23 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
-    app_context.frame_dimensions = V4l2Device_select_highest_resolution(
-        app_context.video_device->file_descriptor);
-    if (UNLIKELY(app_context.frame_dimensions.width == 0 ||
-                 app_context.frame_dimensions.height == 0)) {
+    app_context.frame_dimensions = calloc(1, sizeof(FrameDimensions));
+    if (UNLIKELY(!app_context.frame_dimensions)) {
+        fputs("Failed to allocate frame dimensions\n", stderr);
+        goto cleanup;
+    }
+
+    V4l2Device_select_highest_resolution(
+        app_context.video_device->file_descriptor, app_context.frame_dimensions);
+    if (UNLIKELY(app_context.frame_dimensions->width == 0 ||
+                 app_context.frame_dimensions->height == 0)) {
         fputs("Failed to select highest resolution.\n", stderr);
         goto cleanup;
     }
 
     if (UNLIKELY(!V4l2Device_configure_video_format(
                      app_context.video_device->file_descriptor,
-                     &app_context.frame_dimensions) ||
+                     app_context.frame_dimensions) ||
                  !V4l2Device_setup_memory_mapped_buffers(
                      app_context.video_device, V4L2_MAX_BUFFERS) ||
                  !V4l2Device_start_video_stream(
@@ -115,14 +125,14 @@ int main(int argc, char *argv[]) {
         goto cleanup;
     }
 
-    size_t rgb_buffer_size = (size_t)app_context.frame_dimensions.width *
-                             app_context.frame_dimensions.height * RGB_CHANNELS;
+    size_t rgb_buffer_size = (size_t)app_context.frame_dimensions->width *
+                             app_context.frame_dimensions->height * RGB_CHANNELS;
     app_context.rgb_frame_buffer = calloc(1, rgb_buffer_size);
     app_context.rgb_flipped_buffer = calloc(1, rgb_buffer_size);
 
     app_context.gray_frame_buffer =
-        calloc(1, (size_t)app_context.frame_dimensions.width *
-                      app_context.frame_dimensions.height);
+        calloc(1, (size_t)app_context.frame_dimensions->width *
+                      app_context.frame_dimensions->height);
     if (UNLIKELY(!app_context.rgb_frame_buffer ||
                  !app_context.rgb_flipped_buffer ||
                  !app_context.gray_frame_buffer)) {
@@ -137,7 +147,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (UNLIKELY(!Frontend_init(app_context.frontend_context,
-                                &app_context.frame_dimensions,
+                                app_context.frame_dimensions,
                                 app_context.rgb_flipped_buffer))) {
         fputs("Failed to initialize frontend.\n", stderr);
         goto cleanup;

@@ -45,12 +45,12 @@ void *CaptureThread_run(void *arguments) {
             TimingUtils_measure_conversion_time(
                 thread_arguments->convert_yuv_to_rgb, yuv_frame_data,
                 thread_arguments->rgb_frame_buffer,
-                &thread_arguments->frame_dimensions);
+                thread_arguments->frame_dimensions);
         total_gray_conversion_time_microseconds +=
             TimingUtils_measure_conversion_time(
                 thread_arguments->convert_yuv_to_gray, yuv_frame_data,
                 thread_arguments->gray_frame_buffer,
-                &thread_arguments->frame_dimensions);
+                thread_arguments->frame_dimensions);
 
         captured_frame_count++;
 
@@ -59,13 +59,13 @@ void *CaptureThread_run(void *arguments) {
             thread_arguments->expand_grayscale(
                 thread_arguments->gray_frame_buffer,
                 thread_arguments->rgb_frame_buffer,
-                &thread_arguments->frame_dimensions);
+                thread_arguments->frame_dimensions);
         }
 
         thread_arguments->flip_rgb_horizontal(
             thread_arguments->rgb_frame_buffer,
             thread_arguments->rgb_flipped_buffer,
-            &thread_arguments->frame_dimensions);
+            thread_arguments->frame_dimensions);
         thread_arguments->display_update_callback(
             thread_arguments->display_update_context,
             thread_arguments->rgb_flipped_buffer);

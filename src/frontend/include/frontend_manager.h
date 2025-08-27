@@ -9,7 +9,7 @@
 // Define a context struct for the Frontend module
 typedef struct {
     X11Context x11_context;
-    FrameDimensions frame_dimensions;
+    const FrameDimensions *frame_dimensions;
 } FrontendContext;
 
 // Function to initialize the Frontend module
