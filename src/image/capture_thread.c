@@ -7,6 +7,8 @@
 #include "../common/branch_prediction.h"
 #include "../common/ioctl_utils.h"
 #include "../common/timing_utils.h"
+#include "include/image_conversions.h"
+#include "include/image_processing.h"
 #include "include/v4l2_device_api.h"
 #include "linux/videodev2.h"
 
@@ -43,12 +45,12 @@ void *CaptureThread_run(void *arguments) {
 
         total_rgb_conversion_time_microseconds +=
             TimingUtils_measure_conversion_time(
-                thread_arguments->convert_yuv_to_rgb, yuv_frame_data,
+                ImageConversions_convert_yuv_to_rgb, yuv_frame_data,
                 thread_arguments->rgb_frame_buffer,
                 thread_arguments->frame_dimensions);
         total_gray_conversion_time_microseconds +=
             TimingUtils_measure_conversion_time(
-                thread_arguments->convert_yuv_to_gray, yuv_frame_data,
+                ImageConversions_convert_yuv_to_gray, yuv_frame_data,
                 thread_arguments->gray_frame_buffer,
                 thread_arguments->frame_dimensions);
 
@@ -56,13 +58,13 @@ void *CaptureThread_run(void *arguments) {
 
         if (UNLIKELY(atomic_load_explicit(thread_arguments->gray_view,
                                           memory_order_relaxed))) {
-            thread_arguments->expand_grayscale(
+            ImageProcessing_expand_grayscale(
                 thread_arguments->gray_frame_buffer,
                 thread_arguments->rgb_frame_buffer,
                 thread_arguments->frame_dimensions);
         }
 
-        thread_arguments->flip_rgb_horizontal(
+        ImageProcessing_flip_rgb_horizontal(
             thread_arguments->rgb_frame_buffer,
             thread_arguments->rgb_flipped_buffer,
             thread_arguments->frame_dimensions);

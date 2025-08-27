@@ -12,8 +12,6 @@
 #include "frontend/include/frontend_manager.h"
 #include "frontend/include/x11_utils.h"
 #include "image/include/capture_thread.h"
-#include "image/include/image_conversions.h"
-#include "image/include/image_processing.h"
 #include "image/include/v4l2_device_api.h"
 
 typedef struct {
@@ -74,7 +72,6 @@ static inline void cleanup_application_resources(ApplicationContext *context) {
 }
 
 int main(int argc, char *argv[]) {
-    (void)argv;
     ApplicationContext app_context = {0};
     app_context.gray_view = calloc(1, sizeof(atomic_bool));
 
@@ -83,7 +80,9 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    atomic_init(app_context.gray_view, (bool)(argc > 1));
+    atomic_init(app_context.gray_view, (bool)(argc > 2));
+
+    const char *video_device_path = (argc > 1) ? argv[1] : VIDEO_DEVICE_PATH;
 
     bool success = false;
 
@@ -94,7 +93,8 @@ int main(int argc, char *argv[]) {
     }
 
     app_context.video_device->file_descriptor =
-        V4l2Device_open(VIDEO_DEVICE_PATH);
+        V4l2Device_open(video_device_path);
+
     if (UNLIKELY(app_context.video_device->file_descriptor ==
                  INVALID_FILE_DESCRIPTOR)) {
         fputs("Failed to open video device\n", stderr);
@@ -181,11 +181,7 @@ cleanup:
         .running_flag = app_context.running_flag,
         .gray_view = app_context.gray_view,
         .display_update_callback = application_update_display_callback,
-        .display_update_context = &app_context,
-        .convert_yuv_to_rgb = ImageConversions_convert_yuv_to_rgb,
-        .convert_yuv_to_gray = ImageConversions_convert_yuv_to_gray,
-        .expand_grayscale = ImageProcessing_expand_grayscale,
-        .flip_rgb_horizontal = ImageProcessing_flip_rgb_horizontal};
+        .display_update_context = &app_context};
 
     if (UNLIKELY(pthread_create(&capture_thread_handle, NULL, CaptureThread_run,
                                 &capture_thread_arguments) != 0)) {
