@@ -47,6 +47,19 @@ void FrameProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
     }
 }
 
+void FrameProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
+                                      unsigned char *destination_rgb_buffer,
+                                      FrameDimensions *frame_dimensions) {
+    for (size_t i = 0;
+         i < (size_t)frame_dimensions->width * frame_dimensions->height; ++i) {
+        destination_rgb_buffer[(i * 4) + 0] = source_gray_buffer[i];
+        destination_rgb_buffer[(i * 4) + 1] = source_gray_buffer[i];
+        destination_rgb_buffer[(i * 4) + 2] = source_gray_buffer[i];
+        destination_rgb_buffer[(i * 4) + 3] =
+            (unsigned char)ALPHA_BYTE_VALUE;  // alpha
+    }
+}
+
 long long FrameProcessing_measure_conversion_time(
     void (*convert_func)(const unsigned char *, unsigned char *,
                          FrameDimensions *),

@@ -16,6 +16,8 @@ typedef struct {
     unsigned char *rgb_frame_buffer;
     unsigned char *rgb_flipped_buffer;
     unsigned char *gray_frame_buffer;
+    unsigned char *gray_rgba_buffer;
+    _Atomic bool *gray_view;
 } ApplicationContext;
 
 bool Application_init(ApplicationContext *context,

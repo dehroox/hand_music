@@ -12,8 +12,10 @@ typedef struct {
     unsigned char *rgb_frame_buffer;
     unsigned char *rgb_flipped_buffer;
     unsigned char *gray_frame_buffer;
+    unsigned char *gray_rgba_buffer;
     FrameDimensions frame_dimensions;
     _Atomic bool *running_flag;
+    _Atomic bool *gray_view;
     void (*display_update_callback)(void *context, unsigned char *frame_data);
     void *display_update_context;
 } CaptureThreadArguments;

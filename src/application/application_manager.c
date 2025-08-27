@@ -55,12 +55,14 @@ bool Application_init(ApplicationContext *context,
                              context->frame_dimensions.height * RGB_CHANNELS;
     context->rgb_frame_buffer = calloc(1, rgb_buffer_size);
     context->rgb_flipped_buffer = calloc(1, rgb_buffer_size);
+
     context->gray_frame_buffer =
         calloc(1, (size_t)context->frame_dimensions.width *
                       context->frame_dimensions.height);
+    context->gray_rgba_buffer = calloc(1, rgb_buffer_size);
 
     if (!context->rgb_frame_buffer || !context->rgb_flipped_buffer ||
-        !context->gray_frame_buffer) {
+        !context->gray_frame_buffer || !context->gray_rgba_buffer) {
         fputs("Failed to allocate frame buffers.\n", stderr);
         goto cleanup;
     }
@@ -100,8 +102,10 @@ void Application_run(ApplicationContext *context) {
         .rgb_frame_buffer = context->rgb_frame_buffer,
         .rgb_flipped_buffer = context->rgb_flipped_buffer,
         .gray_frame_buffer = context->gray_frame_buffer,
+        .gray_rgba_buffer = context->gray_rgba_buffer,
         .frame_dimensions = context->frame_dimensions,
         .running_flag = context->running_flag,
+        .gray_view = context->gray_view,
         .display_update_callback = application_update_display_callback,
         .display_update_context = context};
 
