@@ -1,11 +1,12 @@
+#include <stdint.h>
 #define _POSIX_C_SOURCE 200809L
 
-#include "include/image_processing.h"
-
+#include <assert.h>
 #include <immintrin.h>
 #include <stddef.h>
 
 #include "../common/constants.h"
+#include "include/image_processing.h"
 
 #define PIXELS_PER_SSE_BLOCK 4U
 
@@ -51,11 +52,39 @@ void ImageProcessing_flip_rgb_horizontal(const unsigned char *source_rgb_buffer,
 void ImageProcessing_expand_grayscale(const unsigned char *source_gray_buffer,
                                       unsigned char *destination_rgb_buffer,
                                       FrameDimensions *frame_dimensions) {
-    for (size_t i = 0;
-         i < (size_t)frame_dimensions->width * frame_dimensions->height; ++i) {
-        destination_rgb_buffer[(i * 4) + 0] = source_gray_buffer[i];
-        destination_rgb_buffer[(i * 4) + 1] = source_gray_buffer[i];
-        destination_rgb_buffer[(i * 4) + 2] = source_gray_buffer[i];
-        destination_rgb_buffer[(i * 4) + 3] = (unsigned char)ALPHA_BYTE_VALUE;
+    const size_t total_pixels =
+        (size_t)frame_dimensions->width * frame_dimensions->height;
+    const __m128i alpha_val_vec = _mm_set1_epi8((char)ALPHA_BYTE_VALUE);
+
+    assert(frame_dimensions->width % 16 == 0 &&
+           "Width must be a multiple of 16 for SIMD optimization.");
+
+    for (size_t i = 0; i < total_pixels; i += 16) {  // NOLINT
+        // Load 16 gray pixels (16 bytes)
+        __m128i gray_data =
+            _mm_loadu_si128((const __m128i *)(source_gray_buffer + i));
+
+        __m128i r_channel = gray_data;
+        __m128i g_channel = gray_data;
+        __m128i b_channel = gray_data;
+
+        __m128i bg_lo = _mm_unpacklo_epi8(b_channel, g_channel);
+        __m128i bg_hi = _mm_unpackhi_epi8(b_channel, g_channel);
+
+        __m128i ra_lo = _mm_unpacklo_epi8(r_channel, alpha_val_vec);
+        __m128i ra_hi = _mm_unpackhi_epi8(r_channel, alpha_val_vec);
+
+        __m128i bgra0 = _mm_unpacklo_epi16(bg_lo, ra_lo);
+        __m128i bgra1 = _mm_unpackhi_epi16(bg_lo, ra_lo);
+        __m128i bgra2 = _mm_unpacklo_epi16(bg_hi, ra_hi);
+        __m128i bgra3 = _mm_unpackhi_epi16(bg_hi, ra_hi);
+
+        // NOLINTBEGIN
+        uint8_t *output_pixel_ptr = destination_rgb_buffer + (i * 4);
+        _mm_storeu_si128((__m128i *)(output_pixel_ptr + 0), bgra0);
+        _mm_storeu_si128((__m128i *)(output_pixel_ptr + 16), bgra1);
+        _mm_storeu_si128((__m128i *)(output_pixel_ptr + 32), bgra2);
+        _mm_storeu_si128((__m128i *)(output_pixel_ptr + 48), bgra3);
+        // NOLINTEND
     }
 }
