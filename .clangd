@@ -16,3 +16,4 @@ Diagnostics:
       - llvm-header-guard
       - android-cloexec-open
       - readability-magic-numbers
+      - altera-unroll-loops

@@ -13,6 +13,7 @@ Checks: >
   -llvm-header-guard,
   -android-cloexec-open,
   -readability-magic-numbers
+  -altera-unroll-loops
 CheckOptions:
   - key: readability-identifier-naming.IgnoredRegexp
     value: '[i_I_j_J_k_K_n_N_m_M_x_X_y_Y_z_Z]
