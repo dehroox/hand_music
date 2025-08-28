@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "capture/capture.h"
-#include "common/types.h"
-#include "display/window.h"
-#include "postprocess/rgb.h"
-#include "postprocess/yuyv.h"
+#include "capture.h"
+#include "rgb.h"
+#include "types.h"
+#include "window.h"
+#include "yuyv.h"
 
 #define DEVICE_PATH "/dev/video0"
 
@@ -53,7 +53,7 @@ int main(void) {
 
     unsigned char *flippedRgbBuffer =
         (unsigned char *)malloc((unsigned long)FRAME_WIDTH * FRAME_HEIGHT * 4);
-        
+
     if (flippedRgbBuffer == NULL) {
         (void)fprintf(stderr, "Failed to allocate flipped RGB buffer\n");
         free(rgbBuffer);
