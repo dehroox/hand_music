@@ -19,9 +19,9 @@ int main(void) {
         .stride = FRAME_WIDTH * 2,  // YUYV format is 2 bytes per pixel
         .pixels = FRAME_WIDTH * FRAME_HEIGHT};
 
-    CaptureDevice captureDevice;
+    CaptureDevice captureDevice = {0};
     ErrorCode capture_err = ERROR_NONE;
-    WindowState windowState;
+    WindowState windowState = {0};
     ErrorCode window_err = ERROR_NONE;
     unsigned char *rgbBuffer = NULL;
     unsigned char *flippedRgbBuffer = NULL;
@@ -65,14 +65,19 @@ int main(void) {
 
         ErrorCode process_err = yuyvToRgb(yuyvFrame, rgbBuffer, &dimensions);
         if (process_err != ERROR_NONE) {
-            (void)fprintf(stderr, "Failed to convert YUYV to RGB: ErrorCode %d\n", process_err);
+            (void)fprintf(stderr,
+                          "Failed to convert YUYV to RGB: ErrorCode %d\n",
+                          process_err);
             quit = true;
             continue;
         }
 
-        process_err = flipRgbHorizontal(rgbBuffer, flippedRgbBuffer, &dimensions);
+        process_err =
+            flipRgbHorizontal(rgbBuffer, flippedRgbBuffer, &dimensions);
         if (process_err != ERROR_NONE) {
-            (void)fprintf(stderr, "Failed to flip RGB horizontally: ErrorCode %d\n", process_err);
+            (void)fprintf(stderr,
+                          "Failed to flip RGB horizontally: ErrorCode %d\n",
+                          process_err);
             quit = true;
             continue;
         }
