@@ -12,7 +12,8 @@ typedef struct {
     FrameDimensions dimensions;
 } __attribute__((aligned(32))) WindowState;
 
-WindowState *Window_create(const char *title, FrameDimensions dimensions);
+ErrorCode Window_create(WindowState *state, const char *title,
+                        FrameDimensions dimensions);
 
 void Window_draw(WindowState *state, const unsigned char *buffer);
 

@@ -5,8 +5,10 @@
 
 #include "window.h"
 
+#include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,10 +22,14 @@ struct BackendInternal {
     XImage *image;
 } __attribute__((aligned(32)));
 
-WindowState *Window_create(const char *title, FrameDimensions dimensions) {
+ErrorCode Window_create(WindowState *state, const char *title,
+                        FrameDimensions dimensions) {
+    state->internal = NULL;
+    state->dimensions = dimensions;
+
     Display *display = XOpenDisplay(NULL);
     if (!display) {
-        return NULL;
+        return ERROR_FILE_OPEN_FAILED;
     }
 
     int screen = DefaultScreen(display);
@@ -44,19 +50,22 @@ WindowState *Window_create(const char *title, FrameDimensions dimensions) {
         dimensions.width, dimensions.height, 32, 0);
     if (!image) {
         XCloseDisplay(display);
-        return NULL;
+        return ERROR_ALLOCATION_FAILED;
     }
 
-    BackendInternal *internal = malloc(sizeof(BackendInternal));
+    BackendInternal *internal = malloc(sizeof(struct BackendInternal));
+    if (!internal) {
+        XDestroyImage(image);
+        XCloseDisplay(display);
+        return ERROR_ALLOCATION_FAILED;
+    }
     internal->display = display;
     internal->window = xWindow;
     internal->gc = internal_gc;
     internal->image = image;
 
-    WindowState *state = malloc(sizeof(WindowState));
     state->internal = internal;
-    state->dimensions = dimensions;
-    return state;
+    return ERROR_NONE;
 }
 
 void Window_draw(WindowState *state, const unsigned char *buffer) {
@@ -88,5 +97,4 @@ void Window_destroy(WindowState *state) {
     XDestroyWindow(backend->display, backend->window);
     XCloseDisplay(backend->display);
     free(backend);
-    free(state);
 }

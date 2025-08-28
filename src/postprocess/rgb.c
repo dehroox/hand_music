@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <immintrin.h>
+#include <stdlib.h>
 
 #include "types.h"
 
@@ -24,20 +25,19 @@ void flipRgbHorizontal(const unsigned char *rgbBuffer,
 
     const size_t rowBytes = (size_t)frame_dimensions->width * 4;
 
-    for (unsigned int row = 0; row < frame_dimensions->height; ++row) {
+    for (size_t row = 0; row < frame_dimensions->height; ++row) {
         const unsigned char *srcRow = rgbBuffer + (row * rowBytes);
         unsigned char *destRow = destBuffer + (row * rowBytes);
 
-        unsigned int blockAmount = frame_dimensions->width / 4;
+        const size_t blockAmount = (size_t)frame_dimensions->width / 4;
 
-        for (unsigned int block = 0; block < blockAmount; ++block) {
-            unsigned int srcColumn = block * 4;
-            unsigned int destColumn = frame_dimensions->width - 4 - srcColumn;
+        for (size_t block = 0; block < blockAmount; ++block) {
+            const size_t srcColumn = block * 4;
+            const size_t destColumn = frame_dimensions->width - 4 - srcColumn;
 
             const __m128i *srcVector =
-                (const __m128i *)(srcRow + ((size_t)(srcColumn * 4)));
-            __m128i *destVector =
-                (__m128i *)(destRow + ((size_t)(destColumn * 4)));
+                (const __m128i *)(srcRow + (srcColumn * 4));
+            __m128i *destVector = (__m128i *)(destRow + (destColumn * 4));
 
             __m128i loaded = _mm_loadu_si128(srcVector);
             __m128i flipped =

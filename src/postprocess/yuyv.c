@@ -20,10 +20,10 @@ static inline RGBLane YuyvLaneToRgb(const __m128i yuyvLane) {
     const __m128i uOffset = _mm_set1_epi16(128);
     const __m128i vOffset = _mm_set1_epi16(128);
 
-    const __m128i redScale = _mm_set1_epi16(359);
-    const __m128i greenUScale = _mm_set1_epi16(88);
-    const __m128i greenVScale = _mm_set1_epi16(183);
-    const __m128i blueScale = _mm_set1_epi16(454);
+    const __m128i redScale = _mm_set1_epi16(359);     // 1.402 * 256
+    const __m128i greenUScale = _mm_set1_epi16(88);   // 0.344 * 256
+    const __m128i greenVScale = _mm_set1_epi16(183);  // 0.714 * 256
+    const __m128i blueScale = _mm_set1_epi16(454);    // 1.772 * 256
 
     const __m128i maxRgb = _mm_set1_epi16(255);
 
@@ -49,16 +49,19 @@ static inline RGBLane YuyvLaneToRgb(const __m128i yuyvLane) {
     const __m128i uSigned = _mm_sub_epi16(u16, uOffset);
     const __m128i vSigned = _mm_sub_epi16(v16, vOffset);
 
+    // R = Y + 1.402 * V
     __m128i red = _mm_add_epi16(
         yBytes16,
         _mm_srai_epi16(_mm_mullo_epi16(vSigned, redScale), FIXED_POINT_SHIFT));
 
+    // G = Y - 0.344 * U - 0.714 * V
     const __m128i greenTemp =
         _mm_add_epi16(_mm_mullo_epi16(uSigned, greenUScale),
                       _mm_mullo_epi16(vSigned, greenVScale));
     __m128i green =
         _mm_sub_epi16(yBytes16, _mm_srai_epi16(greenTemp, FIXED_POINT_SHIFT));
 
+    // B = Y + 1.772 * U
     __m128i blue = _mm_add_epi16(
         yBytes16,
         _mm_srai_epi16(_mm_mullo_epi16(uSigned, blueScale), FIXED_POINT_SHIFT));
@@ -68,6 +71,8 @@ static inline RGBLane YuyvLaneToRgb(const __m128i yuyvLane) {
     blue = _mm_max_epi16(zero, _mm_min_epi16(blue, maxRgb));
 
     RGBLane rgb;
+
+    // 16b pack to 8b
     rgb.red = _mm_packus_epi16(red, zero);
     rgb.green = _mm_packus_epi16(green, zero);
     rgb.blue = _mm_packus_epi16(blue, zero);
@@ -136,9 +141,7 @@ void yuyvToGray(const unsigned char *__restrict yuyvBuffer,
                 const FrameDimensions *dimensions) {
     assert(yuyvBuffer && grayBuffer && dimensions);
     assert(dimensions->width > 0 && dimensions->height > 0);
-
-    static const unsigned char PIXELS_PER_BLOCK = 16;
-    assert(LIKELY(dimensions->width % (PIXELS_PER_BLOCK * 2) == 0));
+    assert(LIKELY(dimensions->width % 32 == 0));
 
     const __m256i shuffleMask =
         _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, -128, -128, -128, -128,
@@ -148,13 +151,10 @@ void yuyvToGray(const unsigned char *__restrict yuyvBuffer,
     for (size_t row = 0; row < dimensions->height; ++row) {
         const unsigned char *inputRow = yuyvBuffer + (row * dimensions->stride);
         unsigned char *outputRow = grayBuffer + (row * dimensions->width);
-
-        for (size_t col = 0; col < dimensions->width;
-             col += (size_t)(PIXELS_PER_BLOCK * 2)) {
+        for (size_t col = 0; col < dimensions->width; col += 32) {
             YuyvBlockToGray(inputRow + (col * 2), outputRow + col, shuffleMask);
-            YuyvBlockToGray(
-                inputRow + (col * 2) + ((ptrdiff_t)PIXELS_PER_BLOCK * 2),
-                outputRow + col + PIXELS_PER_BLOCK, shuffleMask);
+            YuyvBlockToGray(inputRow + (col * 2) + ((ptrdiff_t)32),
+                            outputRow + col + 16, shuffleMask);
         }
     }
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <immintrin.h>
 
 #include "types.h"
