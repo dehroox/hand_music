@@ -12,3 +12,6 @@ typedef struct {
 
 void yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
                const FrameDimensions *dimensions);
+void yuyvToGray(const unsigned char *__restrict yuyvBuffer,
+                unsigned char *__restrict grayBuffer,
+                const FrameDimensions *dimensions);

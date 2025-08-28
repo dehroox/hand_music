@@ -9,7 +9,7 @@
 #include "branch.h"
 #include "types.h"
 
-static inline RGBLane yuyvLaneToRgb(const __m128i yuyvLane) {
+static inline RGBLane YuyvLaneToRgb(const __m128i yuyvLane) {
     static const short FIXED_POINT_SHIFT = 8;
 
     const __m128i zero = _mm_setzero_si128();
@@ -30,17 +30,17 @@ static inline RGBLane yuyvLaneToRgb(const __m128i yuyvLane) {
     const __m128i yBytes16 = _mm_cvtepu8_epi16(shuffled);
     const __m128i uvBytes = _mm_srli_si128(shuffled, 8);
 
-    const __m128i uDuplicated = _mm_shuffle_epi8(
+    const __m128i uDup = _mm_shuffle_epi8(
         uvBytes, _mm_setr_epi8(0, 0, 2, 2, 4, 4, 6, 6, (char)0x80, (char)0x80,
                                (char)0x80, (char)0x80, (char)0x80, (char)0x80,
                                (char)0x80, (char)0x80));
-    const __m128i vDuplicated = _mm_shuffle_epi8(
+    const __m128i vDup = _mm_shuffle_epi8(
         uvBytes, _mm_setr_epi8(1, 1, 3, 3, 5, 5, 7, 7, (char)0x80, (char)0x80,
                                (char)0x80, (char)0x80, (char)0x80, (char)0x80,
                                (char)0x80, (char)0x80));
 
-    const __m128i u16 = _mm_cvtepu8_epi16(uDuplicated);
-    const __m128i v16 = _mm_cvtepu8_epi16(vDuplicated);
+    const __m128i u16 = _mm_cvtepu8_epi16(uDup);
+    const __m128i v16 = _mm_cvtepu8_epi16(vDup);
 
     const __m128i uSigned = _mm_sub_epi16(u16, uOffset);
     const __m128i vSigned = _mm_sub_epi16(v16, vOffset);
@@ -49,10 +49,11 @@ static inline RGBLane yuyvLaneToRgb(const __m128i yuyvLane) {
         yBytes16,
         _mm_srai_epi16(_mm_mullo_epi16(vSigned, redScale), FIXED_POINT_SHIFT));
 
-    const __m128i gTemp = _mm_add_epi16(_mm_mullo_epi16(uSigned, greenUScale),
-                                        _mm_mullo_epi16(vSigned, greenVScale));
+    const __m128i greenTemp =
+        _mm_add_epi16(_mm_mullo_epi16(uSigned, greenUScale),
+                      _mm_mullo_epi16(vSigned, greenVScale));
     __m128i green =
-        _mm_sub_epi16(yBytes16, _mm_srai_epi16(gTemp, FIXED_POINT_SHIFT));
+        _mm_sub_epi16(yBytes16, _mm_srai_epi16(greenTemp, FIXED_POINT_SHIFT));
 
     __m128i blue = _mm_add_epi16(
         yBytes16,
@@ -62,7 +63,7 @@ static inline RGBLane yuyvLaneToRgb(const __m128i yuyvLane) {
     green = _mm_max_epi16(zero, _mm_min_epi16(green, maxRgb));
     blue = _mm_max_epi16(zero, _mm_min_epi16(blue, maxRgb));
 
-    RGBLane rgb = {0};
+    RGBLane rgb;
     rgb.red = _mm_packus_epi16(red, zero);
     rgb.green = _mm_packus_epi16(green, zero);
     rgb.blue = _mm_packus_epi16(blue, zero);
@@ -70,36 +71,43 @@ static inline RGBLane yuyvLaneToRgb(const __m128i yuyvLane) {
     return rgb;
 }
 
+static inline void YuyvBlockToGray(const unsigned char *input,
+                                   unsigned char *output,
+                                   const __m256i shuffleMask) {
+    assert(input && output);
+
+    const __m256i block = _mm256_loadu_si256((const __m256i *)input);
+    const __m256i shuffled = _mm256_shuffle_epi8(block, shuffleMask);
+
+    const __m128i low = _mm256_castsi256_si128(shuffled);
+    const __m128i high = _mm256_extracti128_si256(shuffled, 1);
+    const __m128i packed = _mm_unpacklo_epi64(low, high);
+
+    _mm_storeu_si128((__m128i *)output, packed);
+}
+
 void yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
                const FrameDimensions *dimensions) {
-    assert(yuyvBuffer != NULL && "yuyvBuffer cannot be NULL");
-    assert(dimensions != NULL && "dimensions cannot be NULL");
-    assert(dimensions->width > 0 && "dimensions width must be greater than 0");
-    assert(dimensions->height > 0 &&
-           "dimensions height must be greater than 0");
-
+    assert(yuyvBuffer && rgbBuffer && dimensions);
+    assert(dimensions->width > 0 && dimensions->height > 0);
     assert(LIKELY(dimensions->width % 16 == 0));
 
-    for (size_t rowIndex = 0; rowIndex < dimensions->height; ++rowIndex) {
-        const uint8_t *yuyvRowPtr =
-            yuyvBuffer + (rowIndex * dimensions->stride);
-        uint8_t *rgbRowPtr = rgbBuffer + (rowIndex * dimensions->width * 4);
+    for (size_t row = 0; row < dimensions->height; ++row) {
+        const uint8_t *yuyvRow = yuyvBuffer + (row * dimensions->stride);
+        uint8_t *rgbRow = rgbBuffer + (row * dimensions->width * 4);
 
-        for (size_t columnIndex = 0; columnIndex < dimensions->width;
-             columnIndex += 16) {
-            const __m128i lane0 = _mm_loadu_si128(
-                (const __m128i *)(yuyvRowPtr + (columnIndex * 2)));
-            const __m128i lane1 = _mm_loadu_si128(
-                (const __m128i *)(yuyvRowPtr + (columnIndex * 2) + 16));
+        for (size_t col = 0; col < dimensions->width; col += 16) {
+            const __m128i lane0 =
+                _mm_loadu_si128((const __m128i *)(yuyvRow + (col * 2)));
+            const __m128i lane1 =
+                _mm_loadu_si128((const __m128i *)(yuyvRow + (col * 2) + 16));
 
-            const RGBLane lane0Rgb = yuyvLaneToRgb(lane0);
-            const RGBLane lane1Rgb = yuyvLaneToRgb(lane1);
+            const RGBLane rgb0 = YuyvLaneToRgb(lane0);
+            const RGBLane rgb1 = YuyvLaneToRgb(lane1);
 
-            const __m128i red = _mm_unpacklo_epi64(lane0Rgb.red, lane1Rgb.red);
-            const __m128i green =
-                _mm_unpacklo_epi64(lane0Rgb.green, lane1Rgb.green);
-            const __m128i blue =
-                _mm_unpacklo_epi64(lane0Rgb.blue, lane1Rgb.blue);
+            const __m128i red = _mm_unpacklo_epi64(rgb0.red, rgb1.red);
+            const __m128i green = _mm_unpacklo_epi64(rgb0.green, rgb1.green);
+            const __m128i blue = _mm_unpacklo_epi64(rgb0.blue, rgb1.blue);
             const __m128i alpha = _mm_set1_epi8((char)0xFF);
 
             const __m128i bgLo = _mm_unpacklo_epi8(blue, green);
@@ -107,17 +115,42 @@ void yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
             const __m128i raLo = _mm_unpacklo_epi8(red, alpha);
             const __m128i raHi = _mm_unpackhi_epi8(red, alpha);
 
-            const __m128i bgra0 = _mm_unpacklo_epi16(bgLo, raLo);
-            const __m128i bgra1 = _mm_unpackhi_epi16(bgLo, raLo);
-            const __m128i bgra2 = _mm_unpacklo_epi16(bgHi, raHi);
-            const __m128i bgra3 = _mm_unpackhi_epi16(bgHi, raHi);
+            _mm_storeu_si128((__m128i *)(rgbRow + (col * 4) + 0),
+                             _mm_unpacklo_epi16(bgLo, raLo));
+            _mm_storeu_si128((__m128i *)(rgbRow + (col * 4) + 16),
+                             _mm_unpackhi_epi16(bgLo, raLo));
+            _mm_storeu_si128((__m128i *)(rgbRow + (col * 4) + 32),
+                             _mm_unpacklo_epi16(bgHi, raHi));
+            _mm_storeu_si128((__m128i *)(rgbRow + (col * 4) + 48),
+                             _mm_unpackhi_epi16(bgHi, raHi));
+        }
+    }
+}
 
-            uint8_t *outputPixelPtr = rgbRowPtr + (columnIndex * 4);
+void yuyvToGray(const unsigned char *__restrict yuyvBuffer,
+                unsigned char *__restrict grayBuffer,
+                const FrameDimensions *dimensions) {
+    assert(yuyvBuffer && grayBuffer && dimensions);
+    assert(dimensions->width > 0 && dimensions->height > 0);
 
-            _mm_storeu_si128((__m128i *)(outputPixelPtr + 0), bgra0);
-            _mm_storeu_si128((__m128i *)(outputPixelPtr + 16), bgra1);
-            _mm_storeu_si128((__m128i *)(outputPixelPtr + 32), bgra2);
-            _mm_storeu_si128((__m128i *)(outputPixelPtr + 48), bgra3);
+    static const unsigned char PIXELS_PER_BLOCK = 16;
+    assert(LIKELY(dimensions->width % (PIXELS_PER_BLOCK * 2) == 0));
+
+    const __m256i shuffleMask =
+        _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, -128, -128, -128, -128,
+                         -128, -128, -128, -128, 16, 18, 20, 22, 24, 26, 28, 30,
+                         -128, -128, -128, -128, -128, -128, -128, -128);
+
+    for (size_t row = 0; row < dimensions->height; ++row) {
+        const unsigned char *inputRow = yuyvBuffer + (row * dimensions->stride);
+        unsigned char *outputRow = grayBuffer + (row * dimensions->width);
+
+        for (size_t col = 0; col < dimensions->width;
+             col += (size_t)(PIXELS_PER_BLOCK * 2)) {
+            YuyvBlockToGray(inputRow + (col * 2), outputRow + col, shuffleMask);
+            YuyvBlockToGray(
+                inputRow + (col * 2) + ((ptrdiff_t)PIXELS_PER_BLOCK * 2),
+                outputRow + col + PIXELS_PER_BLOCK, shuffleMask);
         }
     }
 }
