@@ -1,3 +1,8 @@
+/*
+    Simple no alloc, single buffer, per-frame capture, and capture device
+    creation, using V4L2.
+*/
+
 #include "capture.h"
 
 #include <fcntl.h>

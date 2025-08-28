@@ -1,3 +1,7 @@
+/*
+    Contains YUYV processing related functions, exposed api is in `yuyv.h`
+*/
+
 #include "yuyv.h"
 
 #include <assert.h>

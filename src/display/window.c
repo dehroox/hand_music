@@ -1,3 +1,8 @@
+/*
+    Backend agnostic window creation api, with an opaque exposed api, see
+   `window.h`
+*/
+
 #include "window.h"
 
 #include <X11/Xlib.h>

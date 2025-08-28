@@ -1,3 +1,7 @@
+/*
+    LIKELY/UNLIKELY helpers for better branch prediction.
+*/
+
 #pragma once
 
 #define LIKELY(x) __builtin_expect(!!(x), 1)

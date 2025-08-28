@@ -1,3 +1,7 @@
+/*
+    Common types used across most of the codebase.
+*/
+
 #pragma once
 
 typedef struct {
