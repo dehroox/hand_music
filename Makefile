@@ -7,6 +7,11 @@ BUILD_DIR := build/$(PROFILE)
 
 CC := ccache gcc
 
+SRCDIR := src
+OBJDIR := $(BUILD_DIR)/obj
+BINDIR := $(BUILD_DIR)
+TARGET := $(BINDIR)/hand_music
+
 COMMON_FLAGS := \
     -std=c23 \
     -Wall -Wextra \
@@ -56,11 +61,6 @@ else ifeq ($(PROFILE),release)
 else
     $(error Unknown profile "$(PROFILE)". Use: debug, release)
 endif
-
-SRCDIR := src
-OBJDIR := $(BUILD_DIR)/obj
-BINDIR := $(BUILD_DIR)
-TARGET := $(BINDIR)/hand_music
 
 SOURCES := $(shell find $(SRCDIR) -name "*.c")
 OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))

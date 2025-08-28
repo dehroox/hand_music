@@ -53,7 +53,7 @@ WindowState *Window_create(const char *title, FrameDimensions dimensions) {
     internal->gc = internal_gc;
     internal->image = image;
 
-    WindowState *state = malloc(sizeof(Window));
+    WindowState *state = malloc(sizeof(WindowState));
     state->internal = internal;
     state->dimensions = dimensions;
     return state;
