@@ -1,17 +1,20 @@
-#include "include/capture_thread.h"
+#include "capture_thread.h"
 
 #include <assert.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-#include "../common/branch_prediction.h"
-#include "../common/ioctl_utils.h"
-#include "../common/timing_utils.h"
-#include "include/image_conversions.h"
-#include "include/image_processing.h"
-#include "include/v4l2_device_api.h"
+#include "branch_prediction.h"
+#include "common_types.h"
+#include "constants.h"
+#include "image_conversions.h"
+#include "image_processing.h"
+#include "ioctl_utils.h"
 #include "linux/videodev2.h"
+#include "timing_utils.h"
+#include "v4l2_device_api.h"
 
 typedef struct {
     long long *total_rgb_conversion_time_microseconds;

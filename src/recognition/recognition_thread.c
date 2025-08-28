@@ -1,6 +1,7 @@
 #include "include/recognition_thread.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 void* RecognitionThread_run(void* arguments) {
     assert(arguments != NULL && "Arguments cannot be NULL");

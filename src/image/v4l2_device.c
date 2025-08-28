@@ -13,10 +13,11 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "../common/branch_prediction.h"
-#include "../common/common_types.h"
-#include "../common/ioctl_utils.h"
-#include "include/v4l2_device_api.h"
+#include "branch_prediction.h"
+#include "common_types.h"
+#include "constants.h"
+#include "ioctl_utils.h"
+#include "v4l2_device_api.h"
 
 #define PIXEL_FORMAT V4L2_PIX_FMT_YUYV
 #define VIDEO_CAPTURE_TYPE V4L2_BUF_TYPE_VIDEO_CAPTURE

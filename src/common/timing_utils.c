@@ -1,7 +1,10 @@
 #include "timing_utils.h"
 
 #include <assert.h>
+#include <bits/time.h>
 #include <time.h>
+
+#include "common_types.h"
 
 long long TimingUtils_measure_conversion_time(
     void (*convert_func)(const unsigned char *, unsigned char *,

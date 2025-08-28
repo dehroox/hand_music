@@ -108,7 +108,7 @@ compile_commands:
 
 lint: compile_commands
 	@echo "  LINT    all"
-	$(Q)clang-tidy -p compile_commands.json $(SOURCES) --extra-arg=-Wno-unknown-warning-option
+	$(Q)clang-tidy -p compile_commands.json $(SOURCES)
 
 format:
 	@echo "  FORMAT  all"

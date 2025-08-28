@@ -1,10 +1,11 @@
 #include <assert.h>
 #include <immintrin.h>
+#include <stddef.h>
 
-#include "../common/branch_prediction.h"
-#include "../common/common_types.h"
-#include "../common/constants.h"
-#include "include/image_conversions.h"
+#include "branch_prediction.h"
+#include "common_types.h"
+#include "constants.h"
+#include "image_conversions.h"
 
 static inline void process_yuv_to_gray_block(
     const unsigned char *input_block_ptr, unsigned char *output_block_ptr,

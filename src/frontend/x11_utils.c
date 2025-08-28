@@ -1,15 +1,18 @@
 #include "include/x11_utils.h"
 
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "../common/branch_prediction.h"
+#include "branch_prediction.h"
+#include "common_types.h"
 
-#define WINDOW_BORDER_WIDTH 1
-#define WINDOW_POSITION_X 10
-#define WINDOW_POSITION_Y 10
-#define BITMAP_PAD 32
+static const unsigned short int WINDOW_BORDER_WIDTH = 1;
+static const unsigned short int WINDOW_POSITION_X = 10;
+static const unsigned short int WINDOW_POSITION_Y = 10;
+static const unsigned short int BITMAP_PAD = 32;
 
 bool X11Utils_init(X11Context *context, const FrameDimensions *frame_dimensions,
                    unsigned char *rgb_frame_buffer) {

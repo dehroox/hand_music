@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <bits/pthreadtypes.h>
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -8,6 +9,7 @@
 
 #include "common/branch_prediction.h"
 #include "common/constants.h"
+#include "common_types.h"
 #include "frontend/include/frontend_manager.h"
 #include "frontend/include/x11_utils.h"
 #include "image/include/capture_thread.h"

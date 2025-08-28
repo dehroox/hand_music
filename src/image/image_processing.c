@@ -1,12 +1,12 @@
-#include <stdint.h>
-#define _POSIX_C_SOURCE 200809L
+#include "include/image_processing.h"
 
 #include <assert.h>
 #include <immintrin.h>
 #include <stddef.h>
+#include <stdint.h>
 
-#include "../common/constants.h"
-#include "include/image_processing.h"
+#include "common_types.h"
+#include "constants.h"
 
 void ImageProcessing_flip_rgb_horizontal(
     const unsigned char *source_rgb_buffer,

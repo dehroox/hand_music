@@ -1,8 +1,15 @@
 #include "include/frontend_manager.h"
 
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <assert.h>
+#include <stdatomic.h>
+#include <stddef.h>
 
-#include "../common/branch_prediction.h"
+#include "branch_prediction.h"
+#include "common_types.h"
+#include "x11_utils.h"
 
 bool Frontend_init(FrontendContext *context,
                    const FrameDimensions *frame_dimensions,
