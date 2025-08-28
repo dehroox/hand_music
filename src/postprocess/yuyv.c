@@ -70,21 +70,20 @@ static inline RGBLane yuyvLaneToRgb(const __m128i yuyvLane) {
     return rgb;
 }
 
-void yuyvToRgb(const unsigned char *__restrict yuyvBuffer,
-               const FrameDimensions *__restrict dimensions) {
+void yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
+               const FrameDimensions *dimensions) {
     assert(yuyvBuffer != NULL && "yuyvBuffer cannot be NULL");
     assert(dimensions != NULL && "dimensions cannot be NULL");
     assert(dimensions->width > 0 && "dimensions width must be greater than 0");
     assert(dimensions->height > 0 &&
            "dimensions height must be greater than 0");
-    assert(LIKELY(dimensions->width % 16 == 0));
 
-    unsigned char *output = calloc(1, (unsigned long)dimensions->pixels * 4);
+    assert(LIKELY(dimensions->width % 16 == 0));
 
     for (size_t rowIndex = 0; rowIndex < dimensions->height; ++rowIndex) {
         const uint8_t *yuyvRowPtr =
             yuyvBuffer + (rowIndex * dimensions->stride);
-        uint8_t *rgbRowPtr = output + (rowIndex * dimensions->width * 4);
+        uint8_t *rgbRowPtr = rgbBuffer + (rowIndex * dimensions->width * 4);
 
         for (size_t columnIndex = 0; columnIndex < dimensions->width;
              columnIndex += 16) {

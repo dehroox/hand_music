@@ -10,5 +10,5 @@ typedef struct {
     __m128i blue;
 } __attribute__((aligned(64))) RGBLane;
 
-void yuyvToRgb(const unsigned char *__restrict yuyvBuffer,
-               const FrameDimensions *__restrict dimensions);
+void yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
+               const FrameDimensions *dimensions);
