@@ -42,9 +42,9 @@ COMMON_FLAGS := \
     $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")') \
     -I$(CURDIR)/$(SRCDIR) \
     -I$(CURDIR)/$(SRCDIR)/common \
-    -I$(CURDIR)/$(SRCDIR)/display \
+    -I$(CURDIR)/$(SRCDIR)/ui \
     -I$(CURDIR)/$(SRCDIR)/capture \
-    -I$(CURDIR)/$(SRCDIR)/postprocess \
+    -I$(CURDIR)/$(SRCDIR)/image \
 
 
 COMMON_LD_FLAGS := $(shell pkg-config --libs x11)
