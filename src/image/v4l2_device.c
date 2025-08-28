@@ -128,6 +128,7 @@ void V4l2Device_select_highest_resolution(
     frame_size_enumerator.pixel_format = PIXEL_FORMAT;
 
     current_max_area = 0;
+
     while (LIKELY(ioctl(video_file_descriptor, VIDIOC_ENUM_FRAMESIZES,
                         &frame_size_enumerator) != INVALID_FILE_DESCRIPTOR)) {
         if (process_frame_size_enumeration(&frame_size_enumerator,
@@ -206,7 +207,6 @@ bool V4l2Device_setup_memory_mapped_buffers(
     }
 
     device_reference->buffer_count = buffer_request.count;
-
     for (unsigned int i = 0; i < device_reference->buffer_count; ++i) {
         if (!process_buffer_setup(video_file_descriptor, device_reference, i)) {
             return false;

@@ -14,7 +14,7 @@ COMMON_FLAGS := \
     -Wstrict-prototypes -Wold-style-definition \
     -Wmissing-prototypes -Wmissing-declarations \
     -Wredundant-decls -Wshadow -Wcast-qual -Wconversion \
-    -Wsign-conversion -Wstrict-aliasing=2 -Wstrict-overflow=5 \
+    -Wsign-conversion -Wstrict-aliasing=3 -Wstrict-overflow=5 \
     -Wswitch-default -Wundef -Winit-self -Wparentheses \
     -Wfloat-equal -Wformat=2 -Wunreachable-code -Wunused \
     -Wvariadic-macros -Wvla -Wpacked -Wstrict-overflow -Wduplicated-branches \
@@ -23,13 +23,23 @@ COMMON_FLAGS := \
     -Wnull-dereference -Wdouble-promotion -Wunsafe-loop-optimizations \
     -Wrestrict -Wpointer-arith -Wsign-compare \
     -Wbad-function-cast -Wmissing-format-attribute \
-    -Wformat-security -Wstrict-aliasing=2 -Werror \
+    -Wformat-security -Wstrict-aliasing=3 -Werror \
+    -Wformat-nonliteral \
+    -Wformat-signedness \
+    -Wformat-truncation \
+    -Wformat-overflow \
+    -Wtrampolines \
+    -Wvector-operation-performance \
+    -Wabsolute-value \
     -fstrict-aliasing -fno-omit-frame-pointer -mavx2 \
+    -D_FORTIFY_SOURCE=2 \
+    -D_POSIX_C_SOURCE=200809L \
     $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")') \
     -I$(CURDIR)/$(SRCDIR) \
     -I$(CURDIR)/src/common \
     -I$(CURDIR)/src/frontend/include \
     -I$(CURDIR)/src/image/include
+
 
 COMMON_LD_FLAGS := $(shell pkg-config --libs x11)
 

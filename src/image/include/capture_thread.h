@@ -19,7 +19,7 @@ typedef struct {
     void (*display_update_callback)(void *context, unsigned char *frame_data);
     void *display_update_context;
 
-} CaptureThreadArguments;
+} __attribute__((aligned(128))) CaptureThreadArguments;
 
 void *CaptureThread_run(void *arguments);
 

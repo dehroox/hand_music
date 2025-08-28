@@ -1,20 +1,20 @@
 Checks: >
-  abseil-*,
-  android-*,
-  google-*,
-  hicpp-*,
-  modernize-*,
-  bugprone-*,
-  performance-*,
-  readability-*,
-  clang-analyzer-*,
-  misc-*,
-  cert-*,
-  llvm-*,
-  zircon-*,
-  openmp-*,
-  linuxkernel-*,
-  darwin-*
-WarningsAsErrors: ''
+  *,
+  -boost-*,
+  -cppcoreguidelines-*,
+  -fuchsia-*,
+  -objc-*,
+  -hicpp-use-nullptr,
+  -modernize-use-nullptr,
+  -google-build-using-namespace,
+  -google-runtime-references,
+  -google-build-namespaces,
+  -llvmlibc-implementation-in-namespace,
+  -llvm-header-guard,
+  -android-cloexec-open,
+  -readability-magic-numbers
+CheckOptions:
+  - key: readability-identifier-naming.IgnoredRegexp
+    value: '[i_I_j_J_k_K_n_N_m_M_x_X_y_Y_z_Z]
+WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'   # scan all headers
-AnalyzeTemporaryDtors: true

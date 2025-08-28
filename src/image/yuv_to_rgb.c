@@ -24,7 +24,7 @@ struct RGBLane {
     __m128i r_lane;
     __m128i g_lane;
     __m128i b_lane;
-};
+} __attribute__((aligned(64)));
 
 /* --- Convert a single SIMD lane of YUV to RGB --- */
 static inline void convert_yuv_lane_to_rgb(const __m128i lane_bytes,
@@ -113,7 +113,6 @@ void ImageConversions_convert_yuv_to_rgb(
         uint8_t *rgb_row_ptr =
             rgb_frame_pointer +
             (row_index * frame_dimensions->width * RGB_CHANNELS);
-
         for (size_t column_index = 0; column_index < frame_dimensions->width;
              column_index += PIXELS_PER_SIMD_BLOCK) {
             __m128i lane0 = _mm_loadu_si128(

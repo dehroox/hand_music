@@ -16,7 +16,7 @@
 typedef struct {
     long long *total_rgb_conversion_time_microseconds;
     long long *total_gray_conversion_time_microseconds;
-} ConversionTime;
+} __attribute__((aligned(16))) ConversionTime;
 
 static void process_frame(const CaptureThreadArguments *thread_arguments,
                           const unsigned char *yuv_frame_data,

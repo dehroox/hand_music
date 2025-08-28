@@ -10,7 +10,7 @@ typedef struct {
     int file_descriptor;
     MemoryMappedBuffer mapped_buffers[V4L2_MAX_BUFFERS];
     unsigned int buffer_count;
-} V4l2DeviceContext;
+} __attribute__((aligned(128))) V4l2DeviceContext;
 
 int V4l2Device_open(const char *device_path);
 void V4l2Device_close(int file_descriptor);

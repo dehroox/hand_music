@@ -1,21 +1,18 @@
 Diagnostics:
   ClangTidy:
     Add:
-      - abseil-*
-      - android-*
-      - google-*
-      - hicpp-*
-      - modernize-*
-      - bugprone-*
-      - performance-*
-      - readability-*
-      - clang-analyzer-*
-      - misc-*
-      - cert-*
-      - llvm-*
-      - zircon-*
-      - openmp-*
-      - linuxkernel-*
-      - darwin-*
+      - '*'
     Remove:
+      - boost-*
+      - cppcoreguidelines-*
+      - fuchsia-*
+      - objc-*
+      - hicpp-use-nullptr
+      - modernize-use-nullptr
+      - google-build-using-namespace
+      - llvmlibc-restrict-system-libc-headers
+      - google-build-namespaces
+      - llvmlibc-implementation-in-namespace
+      - llvm-header-guard
       - android-cloexec-open
+      - readability-magic-numbers

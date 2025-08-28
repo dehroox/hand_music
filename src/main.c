@@ -1,5 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
-
 #include <assert.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -24,7 +22,7 @@ typedef struct {
     unsigned char *rgb_flipped_buffer;
     unsigned char *gray_frame_buffer;
     _Atomic bool *gray_view;
-} ApplicationContext;
+} __attribute__((aligned(64))) ApplicationContext;
 
 static inline void application_update_display_callback(
     void *context_ptr, unsigned char *frame_data) {
@@ -37,7 +35,7 @@ static inline void application_update_display_callback(
                            frame_data);
 }
 
-static inline void cleanup_application_resources(ApplicationContext *context) {
+static void cleanup_application_resources(ApplicationContext *context) {
     assert(context != NULL && "context cannot be NULL");
     if (LIKELY(context->video_device)) {
         V4l2Device_stop_video_stream(context->video_device->file_descriptor);

@@ -38,6 +38,7 @@ void ImageProcessing_flip_rgb_horizontal(
 
         unsigned int num_sse_blocks =
             frame_dimensions->width / PIXELS_PER_SSE_BLOCK;
+
         for (unsigned int block_idx = 0; block_idx < num_sse_blocks;
              ++block_idx) {
             unsigned int source_col_start = block_idx * PIXELS_PER_SSE_BLOCK;
