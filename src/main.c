@@ -10,7 +10,7 @@
 #define DEVICE_PATH "/dev/video0"
 #define FRAME_WIDTH 640
 #define FRAME_HEIGHT 480
-#define FRAME_STRIDE (FRAME_WIDTH * 2)
+#define FRAME_STRIDE (FRAME_WIDTH * 2)  // 2 bytes per YUYV pixel
 
 int main(void) {
     FrameDimensions dimensions = {.width = FRAME_WIDTH,
