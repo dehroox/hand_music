@@ -108,6 +108,7 @@ ErrorCode yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
         return ERROR_INVALID_ARGUMENT;
     }
 
+#if defined(__AVX2__)
     for (size_t row = 0; row < dimensions->height; ++row) {
         const uint8_t *yuyvRow = yuyvBuffer + (row * dimensions->stride);
         uint8_t *rgbRow = rgbBuffer + (row * dimensions->width * 4);
@@ -141,6 +142,9 @@ ErrorCode yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
                              _mm_unpackhi_epi16(bgHi, raHi));
         }
     }
+#else
+    // implement scalar fallback here
+#endif
     return ERROR_NONE;
 }
 
@@ -158,6 +162,7 @@ ErrorCode yuyvToGray(const unsigned char *__restrict yuyvBuffer,
         return ERROR_INVALID_ARGUMENT;
     }
 
+#if defined(__AVX2__)
     const __m256i shuffleMask =
         _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, -128, -128, -128, -128,
                          -128, -128, -128, -128, 16, 18, 20, 22, 24, 26, 28, 30,
@@ -172,5 +177,8 @@ ErrorCode yuyvToGray(const unsigned char *__restrict yuyvBuffer,
                             outputRow + col + 16, shuffleMask);
         }
     }
+#else
+    // implement scalar fallback here
+#endif
     return ERROR_NONE;
 }

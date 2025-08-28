@@ -28,6 +28,7 @@ ErrorCode flipRgbHorizontal(const unsigned char *rgbBuffer,
 
     const size_t rowBytes = (size_t)frame_dimensions->width * 4;
 
+#if defined(__AVX2__)
     for (size_t row = 0; row < frame_dimensions->height; ++row) {
         const unsigned char *srcRow = rgbBuffer + (row * rowBytes);
         unsigned char *destRow = destBuffer + (row * rowBytes);
@@ -49,5 +50,8 @@ ErrorCode flipRgbHorizontal(const unsigned char *rgbBuffer,
             _mm_storeu_si128(destVector, flipped);
         }
     }
+#else
+    // implement scalar fallback
+#endif
     return ERROR_NONE;
 }
