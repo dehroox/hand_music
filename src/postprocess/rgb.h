@@ -2,6 +2,6 @@
 
 #include "types.h"
 
-void flipRgbHorizontal(const unsigned char *rgbBuffer,
+ErrorCode flipRgbHorizontal(const unsigned char *rgbBuffer,
                        unsigned char *destBuffer,
                        const FrameDimensions *frame_dimensions);

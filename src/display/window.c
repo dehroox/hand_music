@@ -1,5 +1,5 @@
 /*
-    Backend agnostic window creation api, with an opaque exposed api, see
+    X11 (for now) window creation api, with an opaque exposed api, see
    `window.h`
 */
 
@@ -29,7 +29,7 @@ ErrorCode Window_create(WindowState *state, const char *title,
 
     Display *display = XOpenDisplay(NULL);
     if (!display) {
-        return ERROR_FILE_OPEN_FAILED;
+        return ERROR_DISPLAY_OPEN_FAILED;
     }
 
     int screen = DefaultScreen(display);
@@ -46,16 +46,21 @@ ErrorCode Window_create(WindowState *state, const char *title,
 
     XImage *image = XCreateImage(
         display, DefaultVisual(display, screen), 24, ZPixmap, 0,
-        malloc((unsigned long)dimensions.width * dimensions.height * 4),
+        (char *)malloc((size_t)dimensions.width * dimensions.height * 4),
         dimensions.width, dimensions.height, 32, 0);
     if (!image) {
+        XFreeGC(display, internal_gc);
+        XDestroyWindow(display, xWindow);
         XCloseDisplay(display);
         return ERROR_ALLOCATION_FAILED;
     }
 
     BackendInternal *internal = malloc(sizeof(struct BackendInternal));
     if (!internal) {
+        free(image->data);
         XDestroyImage(image);
+        XFreeGC(display, internal_gc);
+        XDestroyWindow(display, xWindow);
         XCloseDisplay(display);
         return ERROR_ALLOCATION_FAILED;
     }
@@ -70,9 +75,8 @@ ErrorCode Window_create(WindowState *state, const char *title,
 
 void Window_draw(WindowState *state, const unsigned char *buffer) {
     BackendInternal *backend = state->internal;
-    memcpy(
-        backend->image->data, buffer,
-        (unsigned long)state->dimensions.width * state->dimensions.height * 4);
+    memcpy(backend->image->data, buffer,
+           (size_t)state->dimensions.width * state->dimensions.height * 4);
     XPutImage(backend->display, backend->window, backend->gc, backend->image, 0,
               0, 0, 0, state->dimensions.width, state->dimensions.height);
     XFlush(backend->display);
@@ -91,10 +95,13 @@ bool Window_pollEvents(WindowState *state) {
 }
 
 void Window_destroy(WindowState *state) {
-    BackendInternal *backend = state->internal;
-    XDestroyImage(backend->image);
-    XFreeGC(backend->display, backend->gc);
-    XDestroyWindow(backend->display, backend->window);
-    XCloseDisplay(backend->display);
-    free(backend);
+    if (state && state->internal) {
+        BackendInternal *backend = state->internal;
+        XDestroyImage(backend->image);
+        XFreeGC(backend->display, backend->gc);
+        XDestroyWindow(backend->display, backend->window);
+        XCloseDisplay(backend->display);
+        free(backend);
+        state->internal = NULL;
+    }
 }

@@ -10,7 +10,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "branch.h"
 #include "types.h"
 
 static inline RGBLane YuyvLaneToRgb(const __m128i yuyvLane) {
@@ -95,11 +94,17 @@ static inline void YuyvBlockToGray(const unsigned char *input,
     _mm_storeu_si128((__m128i *)output, packed);
 }
 
-void yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
+ErrorCode yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
                const FrameDimensions *dimensions) {
-    assert(yuyvBuffer && rgbBuffer && dimensions);
-    assert(dimensions->width > 0 && dimensions->height > 0);
-    assert(LIKELY(dimensions->width % 16 == 0));
+    if (yuyvBuffer == NULL || rgbBuffer == NULL || dimensions == NULL) {
+        return ERROR_INVALID_ARGUMENT;
+    }
+    if (dimensions->width == 0 || dimensions->height == 0) {
+        return ERROR_INVALID_ARGUMENT;
+    }
+    if (dimensions->width % 16 != 0) {
+        return ERROR_INVALID_ARGUMENT;
+    }
 
     for (size_t row = 0; row < dimensions->height; ++row) {
         const uint8_t *yuyvRow = yuyvBuffer + (row * dimensions->stride);
@@ -134,14 +139,21 @@ void yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
                              _mm_unpackhi_epi16(bgHi, raHi));
         }
     }
+    return ERROR_NONE;
 }
 
-void yuyvToGray(const unsigned char *__restrict yuyvBuffer,
+ErrorCode yuyvToGray(const unsigned char *__restrict yuyvBuffer,
                 unsigned char *__restrict grayBuffer,
                 const FrameDimensions *dimensions) {
-    assert(yuyvBuffer && grayBuffer && dimensions);
-    assert(dimensions->width > 0 && dimensions->height > 0);
-    assert(LIKELY(dimensions->width % 32 == 0));
+    if (yuyvBuffer == NULL || grayBuffer == NULL || dimensions == NULL) {
+        return ERROR_INVALID_ARGUMENT;
+    }
+    if (dimensions->width == 0 || dimensions->height == 0) {
+        return ERROR_INVALID_ARGUMENT;
+    }
+    if (dimensions->width % 32 != 0) {
+        return ERROR_INVALID_ARGUMENT;
+    }
 
     const __m256i shuffleMask =
         _mm256_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, -128, -128, -128, -128,
@@ -157,4 +169,5 @@ void yuyvToGray(const unsigned char *__restrict yuyvBuffer,
                             outputRow + col + 16, shuffleMask);
         }
     }
+    return ERROR_NONE;
 }

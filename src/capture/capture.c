@@ -37,8 +37,7 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
     fmt.fmt.pix.field = V4L2_FIELD_NONE;
     if (ioctl(device->file_descriptor, VIDIOC_S_FMT, &fmt) < 0) {
-        (void)close(device->file_descriptor);
-        return ERROR_IOCTL_FAILED;
+        goto error_close_fd;
     }
 
     struct v4l2_requestbuffers req = {0};
@@ -46,8 +45,7 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = V4L2_MEMORY_MMAP;
     if (ioctl(device->file_descriptor, VIDIOC_REQBUFS, &req) < 0) {
-        (void)close(device->file_descriptor);
-        return ERROR_IOCTL_FAILED;
+        goto error_close_fd;
     }
 
     struct v4l2_buffer buffer = {0};
@@ -55,34 +53,38 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     buffer.memory = V4L2_MEMORY_MMAP;
     buffer.index = 0;
     if (ioctl(device->file_descriptor, VIDIOC_QUERYBUF, &buffer) < 0) {
-        (void)close(device->file_descriptor);
-        return ERROR_IOCTL_FAILED;
+        goto error_close_fd;
     }
 
     device->buffer = mmap(NULL, buffer.length, PROT_READ | PROT_WRITE,
                           MAP_SHARED, device->file_descriptor, buffer.m.offset);
     if (device->buffer == MAP_FAILED) {
-        (void)close(device->file_descriptor);
-        return ERROR_MMAP_FAILED;
+        goto error_close_fd;
     }
     device->buffer_size = buffer.length;
 
     if (ioctl(device->file_descriptor, VIDIOC_STREAMON, &buffer.type) < 0) {
-        (void)munmap(device->buffer, device->buffer_size);
-        (void)close(device->file_descriptor);
-        return ERROR_IOCTL_FAILED;
+        goto error_unmap_buffer;
     }
 
     return ERROR_NONE;
+
+error_unmap_buffer:
+    if (munmap(device->buffer, device->buffer_size) < 0) {
+        // Log or handle munmap error if necessary
+    }
+error_close_fd:
+    if (close(device->file_descriptor) < 0) {
+        // Log or handle close error if necessary
+    }
+    return ERROR_IOCTL_FAILED;
 }
 
 void CaptureDevice_close(CaptureDevice *device) {
     struct v4l2_buffer buffer = {.type = V4L2_BUF_TYPE_VIDEO_CAPTURE};
-    (void)ioctl(device->file_descriptor, VIDIOC_STREAMOFF, &buffer.type);
-
-    (void)munmap(device->buffer, device->buffer_size);
-    (void)close(device->file_descriptor);
-
+    ioctl(device->file_descriptor, VIDIOC_STREAMOFF, &buffer.type);
+    munmap(device->buffer, device->buffer_size);
+    close(device->file_descriptor);
     device->file_descriptor = -1;
     device->buffer = NULL;
     device->buffer_size = 0;

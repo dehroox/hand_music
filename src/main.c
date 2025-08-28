@@ -11,55 +11,47 @@
 
 static const unsigned short int FRAME_WIDTH = 640;
 static const unsigned short int FRAME_HEIGHT = 480;
-static const unsigned short int FRAME_STRIDE = 640 * 2;
 
 int main(void) {
-    FrameDimensions dimensions = {.width = FRAME_WIDTH,
-                                  .height = FRAME_HEIGHT,
-                                  .stride = FRAME_STRIDE,
-                                  .pixels = FRAME_WIDTH * FRAME_HEIGHT};
+    FrameDimensions dimensions = {
+        .width = FRAME_WIDTH,
+        .height = FRAME_HEIGHT,
+        .stride = FRAME_WIDTH * 2,  // YUYV format is 2 bytes per pixel
+        .pixels = FRAME_WIDTH * FRAME_HEIGHT};
 
     CaptureDevice captureDevice;
-    ErrorCode capture_err =
-        CaptureDevice_open(&captureDevice, DEVICE_PATH, dimensions);
+    ErrorCode capture_err = ERROR_NONE;
+    WindowState windowState;
+    ErrorCode window_err = ERROR_NONE;
+    unsigned char *rgbBuffer = NULL;
+    unsigned char *flippedRgbBuffer = NULL;
 
+    capture_err = CaptureDevice_open(&captureDevice, DEVICE_PATH, dimensions);
     if (capture_err != ERROR_NONE) {
         (void)fprintf(stderr,
                       "Failed to open capture device %s: ErrorCode %d\n",
                       DEVICE_PATH, capture_err);
-        return EXIT_FAILURE;
+        goto cleanup;
     }
 
-    WindowState windowState;
-    ErrorCode window_err =
-        Window_create(&windowState, "Hand Music", dimensions);
-
+    window_err = Window_create(&windowState, "Hand Music", dimensions);
     if (window_err != ERROR_NONE) {
         (void)fprintf(stderr, "Failed to create window: ErrorCode %d\n",
                       window_err);
-        CaptureDevice_close(&captureDevice);
-        return EXIT_FAILURE;
+        goto cleanup;
     }
 
-    unsigned char *rgbBuffer =
-        (unsigned char *)malloc((unsigned long)FRAME_WIDTH * FRAME_HEIGHT * 4);
-
+    rgbBuffer = (unsigned char *)malloc((size_t)FRAME_WIDTH * FRAME_HEIGHT * 4);
     if (rgbBuffer == NULL) {
         (void)fprintf(stderr, "Failed to allocate RGB buffer\n");
-        Window_destroy(&windowState);
-        CaptureDevice_close(&captureDevice);
-        return EXIT_FAILURE;
+        goto cleanup;
     }
 
-    unsigned char *flippedRgbBuffer =
-        (unsigned char *)malloc((unsigned long)FRAME_WIDTH * FRAME_HEIGHT * 4);
-
+    flippedRgbBuffer =
+        (unsigned char *)malloc((size_t)FRAME_WIDTH * FRAME_HEIGHT * 4);
     if (flippedRgbBuffer == NULL) {
         (void)fprintf(stderr, "Failed to allocate flipped RGB buffer\n");
-        free(rgbBuffer);
-        Window_destroy(&windowState);
-        CaptureDevice_close(&captureDevice);
-        return EXIT_FAILURE;
+        goto cleanup;
     }
 
     bool quit = false;
@@ -71,17 +63,40 @@ int main(void) {
             continue;
         }
 
-        yuyvToRgb(yuyvFrame, rgbBuffer, &dimensions);
-        flipRgbHorizontal(rgbBuffer, flippedRgbBuffer, &dimensions);
+        ErrorCode process_err = yuyvToRgb(yuyvFrame, rgbBuffer, &dimensions);
+        if (process_err != ERROR_NONE) {
+            (void)fprintf(stderr, "Failed to convert YUYV to RGB: ErrorCode %d\n", process_err);
+            quit = true;
+            continue;
+        }
+
+        process_err = flipRgbHorizontal(rgbBuffer, flippedRgbBuffer, &dimensions);
+        if (process_err != ERROR_NONE) {
+            (void)fprintf(stderr, "Failed to flip RGB horizontally: ErrorCode %d\n", process_err);
+            quit = true;
+            continue;
+        }
         Window_draw(&windowState, flippedRgbBuffer);
 
         quit = Window_pollEvents(&windowState);
     }
 
-    free(rgbBuffer);
-    free(flippedRgbBuffer);
-    Window_destroy(&windowState);
-    CaptureDevice_close(&captureDevice);
+cleanup:
+    if (flippedRgbBuffer != NULL) {
+        free(flippedRgbBuffer);
+    }
+    if (rgbBuffer != NULL) {
+        free(rgbBuffer);
+    }
 
-    return EXIT_SUCCESS;
+    if (window_err == ERROR_NONE) {
+        Window_destroy(&windowState);
+    }
+
+    if (capture_err == ERROR_NONE) {
+        CaptureDevice_close(&captureDevice);
+    }
+
+    return (capture_err != ERROR_NONE && window_err != ERROR_NONE &&
+            rgbBuffer == NULL && flippedRgbBuffer == NULL);
 }

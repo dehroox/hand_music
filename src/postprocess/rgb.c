@@ -10,18 +10,18 @@
 
 #include "types.h"
 
-void flipRgbHorizontal(const unsigned char *rgbBuffer,
+ErrorCode flipRgbHorizontal(const unsigned char *rgbBuffer,
                        unsigned char *destBuffer,
                        const FrameDimensions *frame_dimensions) {
-    assert(rgbBuffer != NULL && "rgbBuffer cannot be NULL");
-    assert(destBuffer != NULL && "destBuffer cannot be NULL");
-    assert(frame_dimensions != NULL && "frame_dimensions cannot be NULL");
-    assert(frame_dimensions->width > 0 &&
-           "frame_dimensions->width must be greater than 0");
-    assert(frame_dimensions->height > 0 &&
-           "frame_dimensions->height must be greater than 0");
-    assert(frame_dimensions->width % 4 == 0 &&
-           "frame_dimensions->width must be a multiple of 4");
+    if (rgbBuffer == NULL || destBuffer == NULL || frame_dimensions == NULL) {
+        return ERROR_INVALID_ARGUMENT;
+    }
+    if (frame_dimensions->width == 0 || frame_dimensions->height == 0) {
+        return ERROR_INVALID_ARGUMENT;
+    }
+    if (frame_dimensions->width % 4 != 0) {
+        return ERROR_INVALID_ARGUMENT;
+    }
 
     const size_t rowBytes = (size_t)frame_dimensions->width * 4;
 
@@ -46,4 +46,5 @@ void flipRgbHorizontal(const unsigned char *rgbBuffer,
             _mm_storeu_si128(destVector, flipped);
         }
     }
+    return ERROR_NONE;
 }
