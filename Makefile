@@ -36,9 +36,10 @@ COMMON_FLAGS := \
     -D_POSIX_C_SOURCE=200809L \
     $(shell pkg-config --cflags x11 | awk 'gsub("-I", "-isystem ")') \
     -I$(CURDIR)/$(SRCDIR) \
-    -I$(CURDIR)/src/common \
-    -I$(CURDIR)/src/frontend/include \
-    -I$(CURDIR)/src/image/include
+    -I$(CURDIR)/$(SRCDIR)/common \
+    -I$(CURDIR)/$(SRCDIR)/display \
+    -I$(CURDIR)/$(SRCDIR)/capture \
+    -I$(CURDIR)/$(SRCDIR)/postprocess \
 
 
 COMMON_LD_FLAGS := $(shell pkg-config --libs x11)
