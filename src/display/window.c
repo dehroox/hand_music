@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "branch.h"
 #include "types.h"
 
 struct BackendInternal {
@@ -28,7 +29,7 @@ ErrorCode Window_create(WindowState *state, const char *title,
     state->dimensions = dimensions;
 
     Display *display = XOpenDisplay(NULL);
-    if (!display) {
+    if (UNLIKELY(!display)) {
         return ERROR_DISPLAY_OPEN_FAILED;
     }
 
@@ -48,7 +49,7 @@ ErrorCode Window_create(WindowState *state, const char *title,
         display, DefaultVisual(display, screen), 24, ZPixmap, 0,
         (char *)malloc((size_t)dimensions.width * dimensions.height * 4),
         dimensions.width, dimensions.height, 32, 0);
-    if (!image) {
+    if (UNLIKELY(!image)) {
         XFreeGC(display, internal_gc);
         XDestroyWindow(display, xWindow);
         XCloseDisplay(display);
@@ -56,7 +57,7 @@ ErrorCode Window_create(WindowState *state, const char *title,
     }
 
     BackendInternal *internal = malloc(sizeof(struct BackendInternal));
-    if (!internal) {
+    if (UNLIKELY(!internal)) {
         free(image->data);
         XDestroyImage(image);
         XFreeGC(display, internal_gc);
@@ -95,7 +96,7 @@ bool Window_pollEvents(WindowState *state) {
 }
 
 void Window_destroy(WindowState *state) {
-    if (state && state->internal) {
+    if (LIKELY(state && state->internal)) {
         BackendInternal *backend = state->internal;
         XDestroyImage(backend->image);
         XFreeGC(backend->display, backend->gc);

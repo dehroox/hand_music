@@ -8,12 +8,14 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <linux/videodev2.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "branch.h"
 #include "types.h"
 
 ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
@@ -24,7 +26,7 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     device->dimensions = dimensions;
 
     device->file_descriptor = open(devicePath, O_RDWR);
-    if (device->file_descriptor < 0) {
+    if (UNLIKELY(device->file_descriptor < 0)) {
         return ERROR_FILE_OPEN_FAILED;
     }
 
@@ -36,7 +38,7 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     fmt.fmt.pix.sizeimage = dimensions.stride * dimensions.height;
     fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
     fmt.fmt.pix.field = V4L2_FIELD_NONE;
-    if (ioctl(device->file_descriptor, VIDIOC_S_FMT, &fmt) < 0) {
+    if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_S_FMT, &fmt) < 0)) {
         goto error_close_fd;
     }
 
@@ -44,7 +46,7 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     req.count = 1;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = V4L2_MEMORY_MMAP;
-    if (ioctl(device->file_descriptor, VIDIOC_REQBUFS, &req) < 0) {
+    if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_REQBUFS, &req) < 0)) {
         goto error_close_fd;
     }
 
@@ -52,31 +54,30 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buffer.memory = V4L2_MEMORY_MMAP;
     buffer.index = 0;
-    if (ioctl(device->file_descriptor, VIDIOC_QUERYBUF, &buffer) < 0) {
+    if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_QUERYBUF, &buffer) <
+                 0)) {
         goto error_close_fd;
     }
 
     device->buffer = mmap(NULL, buffer.length, PROT_READ | PROT_WRITE,
                           MAP_SHARED, device->file_descriptor, buffer.m.offset);
-    if (device->buffer == MAP_FAILED) {
+    if (UNLIKELY(device->buffer == MAP_FAILED)) {
         goto error_close_fd;
     }
     device->buffer_size = buffer.length;
 
-    if (ioctl(device->file_descriptor, VIDIOC_STREAMON, &buffer.type) < 0) {
+    if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_STREAMON, &buffer.type) <
+                 0)) {
         goto error_unmap_buffer;
     }
 
     return ERROR_NONE;
 
 error_unmap_buffer:
-    if (munmap(device->buffer, device->buffer_size) < 0) {
-        // Log or handle munmap error if necessary
-    }
+    munmap(device->buffer, device->buffer_size);
+    return ERROR_IOCTL_FAILED;
 error_close_fd:
-    if (close(device->file_descriptor) < 0) {
-        // Log or handle close error if necessary
-    }
+    close(device->file_descriptor);
     return ERROR_IOCTL_FAILED;
 }
 
@@ -96,11 +97,11 @@ unsigned char *CaptureDevice_getFrame(const CaptureDevice *device) {
     buffer.memory = V4L2_MEMORY_MMAP;
     buffer.index = 0;
 
-    if (ioctl(device->file_descriptor, VIDIOC_QBUF, &buffer) < 0) {
+    if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_QBUF, &buffer) < 0)) {
         return NULL;
     }
 
-    if (ioctl(device->file_descriptor, VIDIOC_DQBUF, &buffer) < 0) {
+    if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_DQBUF, &buffer) < 0)) {
         return NULL;
     }
 

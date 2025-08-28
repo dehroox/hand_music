@@ -8,18 +8,21 @@
 #include <immintrin.h>
 #include <stdlib.h>
 
+#include "branch.h"
 #include "types.h"
 
 ErrorCode flipRgbHorizontal(const unsigned char *rgbBuffer,
-                       unsigned char *destBuffer,
-                       const FrameDimensions *frame_dimensions) {
-    if (rgbBuffer == NULL || destBuffer == NULL || frame_dimensions == NULL) {
+                            unsigned char *destBuffer,
+                            const FrameDimensions *frame_dimensions) {
+    if (UNLIKELY(rgbBuffer == NULL || destBuffer == NULL ||
+                 frame_dimensions == NULL)) {
         return ERROR_INVALID_ARGUMENT;
     }
-    if (frame_dimensions->width == 0 || frame_dimensions->height == 0) {
+    if (UNLIKELY(frame_dimensions->width == 0 ||
+                 frame_dimensions->height == 0)) {
         return ERROR_INVALID_ARGUMENT;
     }
-    if (frame_dimensions->width % 4 != 0) {
+    if (UNLIKELY(frame_dimensions->width % 4 != 0)) {
         return ERROR_INVALID_ARGUMENT;
     }
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "branch.h"
 #include "capture.h"
 #include "rgb.h"
 #include "types.h"
@@ -27,7 +28,7 @@ int main(void) {
     unsigned char *flippedRgbBuffer = NULL;
 
     capture_err = CaptureDevice_open(&captureDevice, DEVICE_PATH, dimensions);
-    if (capture_err != ERROR_NONE) {
+    if (UNLIKELY(capture_err != ERROR_NONE)) {
         (void)fprintf(stderr,
                       "Failed to open capture device %s: ErrorCode %d\n",
                       DEVICE_PATH, capture_err);
@@ -35,21 +36,21 @@ int main(void) {
     }
 
     window_err = Window_create(&windowState, "Hand Music", dimensions);
-    if (window_err != ERROR_NONE) {
+    if (UNLIKELY(window_err != ERROR_NONE)) {
         (void)fprintf(stderr, "Failed to create window: ErrorCode %d\n",
                       window_err);
         goto cleanup;
     }
 
     rgbBuffer = (unsigned char *)malloc((size_t)FRAME_WIDTH * FRAME_HEIGHT * 4);
-    if (rgbBuffer == NULL) {
+    if (UNLIKELY(rgbBuffer == NULL)) {
         (void)fprintf(stderr, "Failed to allocate RGB buffer\n");
         goto cleanup;
     }
 
     flippedRgbBuffer =
         (unsigned char *)malloc((size_t)FRAME_WIDTH * FRAME_HEIGHT * 4);
-    if (flippedRgbBuffer == NULL) {
+    if (UNLIKELY(flippedRgbBuffer == NULL)) {
         (void)fprintf(stderr, "Failed to allocate flipped RGB buffer\n");
         goto cleanup;
     }
@@ -87,18 +88,18 @@ int main(void) {
     }
 
 cleanup:
-    if (flippedRgbBuffer != NULL) {
+    if (LIKELY(flippedRgbBuffer != NULL)) {
         free(flippedRgbBuffer);
     }
-    if (rgbBuffer != NULL) {
+    if (LIKELY(rgbBuffer != NULL)) {
         free(rgbBuffer);
     }
 
-    if (window_err == ERROR_NONE) {
+    if (LIKELY(window_err == ERROR_NONE)) {
         Window_destroy(&windowState);
     }
 
-    if (capture_err == ERROR_NONE) {
+    if (LIKELY(capture_err == ERROR_NONE)) {
         CaptureDevice_close(&captureDevice);
     }
 

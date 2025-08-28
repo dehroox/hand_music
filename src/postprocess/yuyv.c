@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "branch.h"
 #include "types.h"
 
 static inline RGBLane YuyvLaneToRgb(const __m128i yuyvLane) {
@@ -95,14 +96,15 @@ static inline void YuyvBlockToGray(const unsigned char *input,
 }
 
 ErrorCode yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
-               const FrameDimensions *dimensions) {
-    if (yuyvBuffer == NULL || rgbBuffer == NULL || dimensions == NULL) {
+                    const FrameDimensions *dimensions) {
+    if (UNLIKELY(yuyvBuffer == NULL || rgbBuffer == NULL ||
+                 dimensions == NULL)) {
         return ERROR_INVALID_ARGUMENT;
     }
-    if (dimensions->width == 0 || dimensions->height == 0) {
+    if (UNLIKELY(dimensions->width == 0 || dimensions->height == 0)) {
         return ERROR_INVALID_ARGUMENT;
     }
-    if (dimensions->width % 16 != 0) {
+    if (UNLIKELY(dimensions->width % 16 != 0)) {
         return ERROR_INVALID_ARGUMENT;
     }
 
@@ -143,15 +145,16 @@ ErrorCode yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
 }
 
 ErrorCode yuyvToGray(const unsigned char *__restrict yuyvBuffer,
-                unsigned char *__restrict grayBuffer,
-                const FrameDimensions *dimensions) {
-    if (yuyvBuffer == NULL || grayBuffer == NULL || dimensions == NULL) {
+                     unsigned char *__restrict grayBuffer,
+                     const FrameDimensions *dimensions) {
+    if (UNLIKELY(yuyvBuffer == NULL || grayBuffer == NULL ||
+                 dimensions == NULL)) {
         return ERROR_INVALID_ARGUMENT;
     }
-    if (dimensions->width == 0 || dimensions->height == 0) {
+    if (UNLIKELY(dimensions->width == 0 || dimensions->height == 0)) {
         return ERROR_INVALID_ARGUMENT;
     }
-    if (dimensions->width % 32 != 0) {
+    if (UNLIKELY(dimensions->width % 32 != 0)) {
         return ERROR_INVALID_ARGUMENT;
     }
 
