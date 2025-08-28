@@ -55,7 +55,66 @@ ErrorCode flipRgbHorizontal(const unsigned char *rgbBuffer,
         }
     }
 #else
-    // implement scalar fallback
+    for (size_t row = 0; row < frame_dimensions->height; ++row) {
+        const unsigned char *src = rgbBuffer + (row * rowBytes);
+        unsigned char *dest = destBuffer + (row * rowBytes);
+
+        size_t width = frame_dimensions->width;
+        size_t number = (width + 31) / 32;  // number of 32-pixel blocks
+        size_t rem = width % 32;
+
+        switch (rem) {
+            case 0:
+                do {
+                    for (size_t i = 0; i < 32; ++i) {
+                        const unsigned char *srcPixel = src + (i * 4);
+                        unsigned char *destPixel = dest + ((width - 1 - i) * 4);
+
+                        destPixel[0] = srcPixel[0];
+                        destPixel[1] = srcPixel[1];
+                        destPixel[2] = srcPixel[2];
+                        destPixel[3] = srcPixel[3];
+                    }
+
+                    src += 128;
+                    dest -= 128;
+                    [[fallthrough]];
+
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    case 16:
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    case 8:
+                    case 7:
+                    case 6:
+                    case 5:
+                    case 4:
+                    case 3:
+                    case 2:
+                    case 1:
+                    default:
+                } while (--number > 0);
+        }
+    }
 #endif
     return ERROR_NONE;
 }
