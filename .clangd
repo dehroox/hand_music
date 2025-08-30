@@ -1,3 +1,7 @@
+CompileFlags:
+    Add:
+      - -xc
+
 Diagnostics:
   ClangTidy:
     Add:
