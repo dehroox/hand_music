@@ -2,5 +2,6 @@
 
 #include "types.h"
 
-void boxBlurGray(const unsigned char* grayInput, unsigned char* blurredOutput,
-                 FrameDimensions dimensions);
+ErrorCode boxBlurGray(const unsigned char* grayInput,
+                      unsigned char* blurredOutput,
+                      const FrameDimensions* dimensions);
