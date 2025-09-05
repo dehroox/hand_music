@@ -13,7 +13,7 @@ typedef struct {
 } __attribute__((aligned(32))) WindowState;
 
 ErrorCode Window_create(WindowState *state, const char *title,
-                        FrameDimensions dimensions);
+			FrameDimensions dimensions);
 
 void Window_draw(WindowState *state, const unsigned char *buffer);
 

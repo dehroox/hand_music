@@ -7,13 +7,13 @@ typedef struct {
 } __attribute__((aligned(8))) Point;
 
 void thresholdImage(const unsigned char* grayInput, unsigned char* binaryOutput,
-                    FrameDimensions dimensions, unsigned char threshold);
+		    FrameDimensions dimensions, unsigned char threshold);
 
 int traceContour(const unsigned char* binaryInput, Point* contourOutput,
-                 FrameDimensions dimensions, int maxPoints);
+		 FrameDimensions dimensions, int maxPoints);
 
 int convexHull(const Point* contourInput, Point* convexHullOutput,
-               int pointCount);
+	       int pointCount);
 
 int detectFingertips(const Point* inputConvexHull, int pointCount,
-                     Point* fingertipOutput, int fingertipCount);
+		     Point* fingertipOutput, int fingertipCount);

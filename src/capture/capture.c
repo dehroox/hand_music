@@ -19,7 +19,7 @@
 #include "types.h"
 
 ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
-                             FrameDimensions dimensions) {
+			     FrameDimensions dimensions) {
     device->file_descriptor = -1;
     device->buffer = NULL;
     device->buffer_size = 0;
@@ -27,7 +27,7 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
 
     device->file_descriptor = open(devicePath, O_RDWR);
     if (UNLIKELY(device->file_descriptor < 0)) {
-        return ERROR_FILE_OPEN_FAILED;
+	return ERROR_FILE_OPEN_FAILED;
     }
 
     struct v4l2_format fmt = {0};
@@ -39,7 +39,7 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
     fmt.fmt.pix.field = V4L2_FIELD_NONE;
     if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_S_FMT, &fmt) < 0)) {
-        goto error_close_fd;
+	goto error_close_fd;
     }
 
     struct v4l2_requestbuffers req = {0};
@@ -47,7 +47,7 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = V4L2_MEMORY_MMAP;
     if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_REQBUFS, &req) < 0)) {
-        goto error_close_fd;
+	goto error_close_fd;
     }
 
     struct v4l2_buffer buffer = {0};
@@ -55,20 +55,20 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     buffer.memory = V4L2_MEMORY_MMAP;
     buffer.index = 0;
     if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_QUERYBUF, &buffer) <
-                 0)) {
-        goto error_close_fd;
+		 0)) {
+	goto error_close_fd;
     }
 
     device->buffer = mmap(NULL, buffer.length, PROT_READ | PROT_WRITE,
-                          MAP_SHARED, device->file_descriptor, buffer.m.offset);
+			  MAP_SHARED, device->file_descriptor, buffer.m.offset);
     if (UNLIKELY(device->buffer == MAP_FAILED)) {
-        goto error_close_fd;
+	goto error_close_fd;
     }
     device->buffer_size = buffer.length;
 
     if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_STREAMON, &buffer.type) <
-                 0)) {
-        goto error_unmap_buffer;
+		 0)) {
+	goto error_unmap_buffer;
     }
 
     return ERROR_NONE;
@@ -98,11 +98,11 @@ unsigned char *CaptureDevice_getFrame(const CaptureDevice *device) {
     buffer.index = 0;
 
     if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_QBUF, &buffer) < 0)) {
-        return NULL;
+	return NULL;
     }
 
     if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_DQBUF, &buffer) < 0)) {
-        return NULL;
+	return NULL;
     }
 
     return device->buffer;

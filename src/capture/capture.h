@@ -11,6 +11,6 @@ typedef struct {
 } __attribute__((aligned(64))) CaptureDevice;
 
 ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
-                             FrameDimensions dimensions);
+			     FrameDimensions dimensions);
 void CaptureDevice_close(CaptureDevice *device);
 unsigned char *CaptureDevice_getFrame(const CaptureDevice *device);

@@ -12,7 +12,7 @@ typedef struct {
 } __attribute__((aligned(64))) RGBLane;
 
 ErrorCode yuyvToRgb(const unsigned char *yuyvBuffer, unsigned char *rgbBuffer,
-               const FrameDimensions *dimensions);
+		    const FrameDimensions *dimensions);
 ErrorCode yuyvToGray(const unsigned char *__restrict yuyvBuffer,
-                unsigned char *__restrict grayBuffer,
-                const FrameDimensions *dimensions);
+		     unsigned char *__restrict grayBuffer,
+		     const FrameDimensions *dimensions);

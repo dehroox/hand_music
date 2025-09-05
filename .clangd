@@ -1,6 +1,8 @@
 CompileFlags:
-    Add:
-      - -xc
+  Remove:
+    - -fanalyzer
+    - -fipa-pta
+    - -fstrict-volatile-bitfields
 
 Diagnostics:
   ClangTidy:

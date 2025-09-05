@@ -3,5 +3,5 @@
 #include "types.h"
 
 ErrorCode flipRgbHorizontal(const unsigned char *rgbBuffer,
-                       unsigned char *destBuffer,
-                       const FrameDimensions *frame_dimensions);
+			    unsigned char *destBuffer,
+			    const FrameDimensions *frame_dimensions);

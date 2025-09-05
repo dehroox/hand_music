@@ -1,4 +1,3 @@
 .cache/
-build/
+obj/
 compile_commands.json
-DOCUMENTATION.md
