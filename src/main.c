@@ -26,6 +26,8 @@ int main(void) {
     ErrorCode window_err = ERROR_NONE;
     unsigned char *rgbBuffer = NULL;
     unsigned char *flippedRgbBuffer = NULL;
+    unsigned char *yuyvFrame = NULL;
+    bool quit = false;
 
     capture_err = CaptureDevice_open(&captureDevice, DEVICE_PATH, dimensions);
     if (UNLIKELY(capture_err != ERROR_NONE)) {
@@ -55,9 +57,8 @@ int main(void) {
 	goto cleanup;
     }
 
-    bool quit = false;
     while (!quit) {
-	unsigned char *yuyvFrame = CaptureDevice_getFrame(&captureDevice);
+	yuyvFrame = CaptureDevice_getFrame(&captureDevice);
 	if (yuyvFrame == NULL) {
 	    (void)fprintf(stderr, "Failed to get frame from capture device\n");
 	    quit = true;

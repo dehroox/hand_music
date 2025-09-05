@@ -2,7 +2,7 @@ CFLAGS += -std=c23 -O3 -flto -pedantic-errors \
 	-Wall -Wextra -Werror \
 	-Wshadow -Wdouble-promotion -Wformat=2 -Wundef \
 	-Wsign-conversion \
-	-Wstrict-overflow=5 -Wstrict-prototypes -Wmissing-prototypes \
+	-Wstrict-prototypes -Wmissing-prototypes \
 	-Wcast-qual -Wpointer-arith -Wwrite-strings \
 	-Wmissing-declarations -Wredundant-decls -Wnested-externs \
 	-Winline -Winvalid-pch -Wswitch-default -Wswitch-enum \

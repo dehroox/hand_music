@@ -5,12 +5,12 @@
 
 #include "capture.h"
 
+// clang-format off
+#include <time.h> // NOLINT
+// clang-format on
 #include <assert.h>
 #include <fcntl.h>
 #include <linux/videodev2.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -24,13 +24,15 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     device->buffer = NULL;
     device->buffer_size = 0;
     device->dimensions = dimensions;
+    struct v4l2_requestbuffers req = {0};
+    struct v4l2_format fmt = {0};
+    struct v4l2_buffer buffer = {0};
 
     device->file_descriptor = open(devicePath, O_RDWR);
     if (UNLIKELY(device->file_descriptor < 0)) {
 	return ERROR_FILE_OPEN_FAILED;
     }
 
-    struct v4l2_format fmt = {0};
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     fmt.fmt.pix.width = dimensions.width;
     fmt.fmt.pix.height = dimensions.height;
@@ -41,8 +43,6 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
     if (UNLIKELY(ioctl(device->file_descriptor, VIDIOC_S_FMT, &fmt) < 0)) {
 	goto error_close_fd;
     }
-
-    struct v4l2_requestbuffers req = {0};
     req.count = 1;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     req.memory = V4L2_MEMORY_MMAP;
@@ -50,7 +50,6 @@ ErrorCode CaptureDevice_open(CaptureDevice *device, const char *devicePath,
 	goto error_close_fd;
     }
 
-    struct v4l2_buffer buffer = {0};
     buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buffer.memory = V4L2_MEMORY_MMAP;
     buffer.index = 0;
